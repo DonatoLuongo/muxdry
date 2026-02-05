@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load product_images %}
+
+{% block title %}{{ product.name }} - MUXDRY{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'styles3.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="product-detail">
+    <div class="container">
+        <div class="product-detail-grid">
+            <div class="product-gallery">
+                <div class="main-image">
+                    <img src="{% product_image_url product %}" alt="{{ product.name }}" id="main-product-image">
+                </div>
+                <div class="thumbnail-container">
+                    <div class="thumbnail active" data-image="{% product_image_url product %}">
+                        <img src="{% product_image_url product %}" alt="{{ product.name }}">
+                    </div>
+                    {% if product.image_hover %}
+                    <div class="thumbnail" data-image="{{ product.image_hover.url }}">
+                        <img src="{{ product.image_hover.url }}" alt="{{ product.name }}">
+                    </div>
+                    {% else %}
+                    <div class="thumbnail" data-image="{% product_image_url product %}">
+                        <img src="{% product_image_url product %}" alt="{{ product.name }}">
+                    </div>
+                    {% endif %}
+                    <div class="thumbnail" data-image="{% product_image_url product %}">
+                        <img src="{% product_image_url product %}" alt="{{ product.name }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="product-info">
+                <h1 class="product-title">{{ product.name }}</h1>
+                <div class="product-meta">
+                    <span class="product-sku">{{ product.sku }}</span>
+                    <div class="product-rating">
+                        <div class="stars">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star-half-alt"></i>
+                        </div>
+                        <span class="rating-value">4.5</span>
+                        <span class="review-count">({{ product.sales_count|default:0 }} vendidos)</span>
+                    </div>
+                </div>
+
+                <div class="product-price">
+                    <span class="current-price">${{ product.price }}</span>
+                    {% if product.old_price %}
+                    <span class="old-price">${{ product.old_price }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="product-description">
+                    <p>{{ product.description|linebreaksbr }}</p>
+                </div>
+
+                <form method="post" action="{% url 'orders:add_to_cart' %}" class="product-main-actions-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    <div class="option-quantity option-quantity--styled">
+                        <label class="option-quantity-label">Cantidad</label>
+                        <div class="quantity-selector">
+                            <button type="button" class="qty-btn qty-minus" aria-label="Menos">−</button>
+                            <input type="number" name="quantity" min="1" value="1" class="quantity-input" id="product-qty" readonly>
+                            <button type="button" class="qty-btn qty-plus" aria-label="Más">+</button>
+                        </div>
+                    </div>
+                    <div class="product-main-actions">
+                        <button type="submit" class="btn-add-to-cart">
+                            <i class="fas fa-shopping-cart"></i> Añadir al carrito
+                        </button>
+                        <a href="{% url 'orders:cart' %}" class="btn-buy-now">Ver carrito</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Reseñas -->
+        <div class="product-reviews-section">
+            <h2 class="product-reviews-title"><i class="fas fa-star"></i> Reseñas ({{ reviews_page.paginator.count }})</h2>
+
+            {% if user_can_review %}
+            <form method="post" action="{% url 'submit_review' %}" class="review-form">
+                {% csrf_token %}
+                <input type="hidden" name="product_id" value="{{ product.id }}">
+                <input type="hidden" name="product_slug" value="{{ product.slug }}">
+                <div class="review-form-row">
+                    <label for="review-rating">Calificación (1-5):</label>
+                    <select id="review-rating" name="rating" required>
+                        <option value="">Elige</option>
+                        <option value="5">5 - Excelente</option>
+                        <option value="4">4 - Muy bien</option>
+                        <option value="3">3 - Bien</option>
+                        <option value="2">2 - Regular</option>
+                        <option value="1">1 - Malo</option>
+                    </select>
+                </div>
+                <div class="review-form-row">
+                    <label for="review-title">Título (opcional):</label>
+                    <input type="text" id="review-title" name="title" maxlength="200" placeholder="Resumen de tu opinión">
+                </div>
+                <div class="review-form-row">
+                    <label for="review-comment">Comentario:</label>
+                    <textarea id="review-comment" name="comment" rows="4" required placeholder="Escribe tu opinión sobre el producto"></textarea>
+                </div>
+                <button type="submit" class="btn-submit-review"><i class="fas fa-paper-plane"></i> Enviar reseña</button>
+            </form>
+            {% elif not user.is_authenticated %}
+            <p class="review-login-prompt"><a href="{% url 'login' %}?next={{ request.path }}">Inicia sesión</a> para dejar tu reseña y calificar el producto.</p>
+            {% elif user_has_reviewed %}
+            <p class="review-login-prompt">Ya has enviado una reseña para este producto.</p>
+            {% endif %}
+
+            <div class="review-list">
+                {% for review in reviews_page %}
+                <article class="review-item">
+                    <div class="review-item-header">
+                        <span class="review-stars">{% for i in "12345" %}{% if forloop.counter <= review.rating %}<i class="fas fa-star"></i>{% else %}<i class="far fa-star"></i>{% endif %}{% endfor %}</span>
+                        <span class="review-author">{{ review.user.get_full_name|default:review.user.email }}</span>
+                        <span class="review-date">{{ review.created_at|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    {% if review.title %}<h4 class="review-item-title">{{ review.title }}</h4>{% endif %}
+                    <p class="review-item-comment">{{ review.comment|linebreaksbr }}</p>
+                </article>
+                {% empty %}
+                <p class="review-empty">Aún no hay reseñas. ¡Sé el primero en opinar!</p>
+                {% endfor %}
+            </div>
+
+            {% if reviews_page.paginator.num_pages > 1 %}
+            <nav class="review-pagination">
+                {% if reviews_page.has_previous %}
+                <a href="?page={{ reviews_page.previous_page_number }}">&laquo; Anterior</a>
+                {% endif %}
+                <span class="review-pagination-current">Página {{ reviews_page.number }} de {{ reviews_page.paginator.num_pages }}</span>
+                {% if reviews_page.has_next %}
+                <a href="?page={{ reviews_page.next_page_number }}">Siguiente &raquo;</a>
+                {% endif %}
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.thumbnail').forEach(function(thumb) {
+    thumb.addEventListener('click', function() {
+        var img = this.getAttribute('data-image');
+        if (img) document.getElementById('main-product-image').src = img;
+        document.querySelectorAll('.thumbnail').forEach(function(t) { t.classList.remove('active'); });
+        this.classList.add('active');
+    });
+});
+var qtyInput = document.getElementById('product-qty');
+var minusBtn = document.querySelector('.qty-minus');
+var plusBtn = document.querySelector('.qty-plus');
+if (qtyInput && minusBtn && plusBtn) {
+    minusBtn.addEventListener('click', function() {
+        var v = parseInt(qtyInput.value, 10) || 1;
+        if (v > 1) qtyInput.value = v - 1;
+    });
+    plusBtn.addEventListener('click', function() {
+        var v = parseInt(qtyInput.value, 10) || 1;
+        qtyInput.value = v + 1;
+    });
+}
+</script>
+{% endblock %}

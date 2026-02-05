@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mis Pedidos - MUXDRY{% endblock %}
+
+{% block content %}
+<section class="current-orders-section">
+    <div class="current-orders-container">
+        <div class="profile-header__custom-ui-2 current-orders-header">
+            <div class="profile-avatar__custom-ui-2">
+                <img src="{% static 'assets/Perfil-Default.jpeg' %}" alt="Perfil" class="profile-logo__custom-ui-2">
+            </div>
+            <div class="profile-info__custom-ui-2">
+                <h1 class="profile-name__custom-ui-2">{{ user.get_full_name|default:user.username }}</h1>
+                <p class="profile-email__custom-ui-2">{{ user.email|default:"" }}</p>
+            </div>
+            <span class="current-orders-online"><i class="fas fa-circle"></i> En línea</span>
+        </div>
+
+        {% if user.is_staff %}
+        <div class="current-orders-admin-module">
+            <a href="{% url 'orders:admin_orders' %}" class="admin-module-link"><i class="fas fa-clipboard-list"></i> Panel de solicitudes (Admin)</a>
+            <span class="admin-module-desc">Ver y gestionar todas las solicitudes de pedidos.</span>
+        </div>
+        {% endif %}
+
+        <h2 class="current-orders-title">Mis pedidos actuales</h2>
+        <p class="current-orders-subtitle">Pedidos en curso: pendientes, confirmados, en proceso o enviados.</p>
+
+        <div class="current-orders-filters">
+            <div class="orders-filter-row">
+                <span class="orders-filter-label">Período:</span>
+                <a href="?{% if filtro_date %}date={{ filtro_date }}{% endif %}{% if filtro_q %}{% if filtro_date %}&{% endif %}q={{ filtro_q }}{% endif %}" class="orders-filter-btn {% if not filtro_period %}active{% endif %}">Todos</a>
+                <a href="?period=3m{% if filtro_date %}&date={{ filtro_date }}{% endif %}{% if filtro_q %}&q={{ filtro_q }}{% endif %}" class="orders-filter-btn {% if filtro_period == '3m' %}active{% endif %}">Últimos 3 meses</a>
+                <a href="?period=year{% if filtro_date %}&date={{ filtro_date }}{% endif %}{% if filtro_q %}&q={{ filtro_q }}{% endif %}" class="orders-filter-btn {% if filtro_period == 'year' %}active{% endif %}">Este año</a>
+            </div>
+            <form method="get" class="orders-search-form">
+                {% if filtro_period %}<input type="hidden" name="period" value="{{ filtro_period }}">{% endif %}
+                <label>
+                    <span>Fecha</span>
+                    <input type="date" name="date" value="{{ filtro_date|default:'' }}">
+                </label>
+                <label>
+                    <span>Buscar nº pedido</span>
+                    <input type="text" name="q" placeholder="Ej: MUX-20260203" value="{{ filtro_q|default:'' }}">
+                </label>
+                <button type="submit"><i class="fas fa-search"></i> Buscar</button>
+            </form>
+        </div>
+
+        <div class="current-orders-list">
+            {% for pedido in pedidos %}
+            <div class="profile-order-card__custom-ui-2 current-order-card">
+                <div class="order-header__custom-ui-2">
+                    <span class="order-id__custom-ui-2">#{{ pedido.order_number }}</span>
+                    <span class="order-date__custom-ui-2">{{ pedido.created_at|date:"d M Y" }}</span>
+                    <span class="order-status__custom-ui-2 processing">{{ pedido.get_status_display }}</span>
+                </div>
+                <div class="order-summary__custom-ui-2">
+                    {% for item in pedido.items.all %}
+                    <div class="order-product-preview__custom-ui-2">
+                        <img src="{% if item.product.image %}{{ item.product.image.url }}{% else %}{% static 'assets/products/Drysol/Drysol-2.png' %}{% endif %}" alt="{{ item.product.name }}" class="order-product-img__custom-ui-2">
+                        <div>
+                            <h3 class="order-product-name__custom-ui-2">{{ item.product.name }}</h3>
+                            <p class="order-product-desc__custom-ui-2">Cantidad: {{ item.quantity }} × ${{ item.price }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <div class="order-meta__custom-ui-2">
+                        <div class="order-meta-item__custom-ui-2">
+                            <span class="meta-label__custom-ui-2">Total:</span>
+                            <span class="meta-value__custom-ui-2">${{ pedido.total }}</span>
+                        </div>
+                        <div class="order-meta-item__custom-ui-2">
+                            <span class="meta-label__custom-ui-2">Método de pago:</span>
+                            <span class="meta-value__custom-ui-2">{{ pedido.get_payment_method_display }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% if pedido.status == 'pending' or pedido.status == 'confirmed' %}
+                <form method="post" action="{% url 'orders:cancel_order' %}" class="order-cancel-form" onsubmit="return confirm('¿Cancelar este pedido? Se notificará al administrador.');">
+                    {% csrf_token %}
+                    <input type="hidden" name="order_id" value="{{ pedido.id }}">
+                    <input type="hidden" name="reason" value="Usuario indica que ya no está interesado">
+                    <button type="submit" class="order-cancel-btn"><i class="fas fa-times-circle"></i> Ya no estoy interesado</button>
+                </form>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div class="no-orders-message current-orders-empty">
+                <i class="fas fa-box-open"></i>
+                <h3>No tienes pedidos actuales</h3>
+                <p>Visita nuestra tienda y descubre nuestros productos</p>
+                <a href="{% url 'home' %}" class="button primary">Ir a la tienda</a>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="current-orders-pagination">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if filtro_period %}&period={{ filtro_period }}{% endif %}{% if filtro_date %}&date={{ filtro_date }}{% endif %}{% if filtro_q %}&q={{ filtro_q }}{% endif %}">&laquo; Anterior</a>
+            {% endif %}
+            {% for n in page_obj.paginator.page_range %}
+            {% if page_obj.number == n %}
+            <span class="current">{{ n }}</span>
+            {% else %}
+            <a href="?page={{ n }}{% if filtro_period %}&period={{ filtro_period }}{% endif %}{% if filtro_date %}&date={{ filtro_date }}{% endif %}{% if filtro_q %}&q={{ filtro_q }}{% endif %}">{{ n }}</a>
+            {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if filtro_period %}&period={{ filtro_period }}{% endif %}{% if filtro_date %}&date={{ filtro_date }}{% endif %}{% if filtro_q %}&q={{ filtro_q }}{% endif %}">Siguiente &raquo;</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.current-orders-section { padding: 2rem 1rem 4rem; background: #f5f6f8; min-height: 60vh; }
+.current-orders-container { max-width: 900px; margin: 0 auto; }
+.current-orders-header {
+    display: flex; align-items: center; gap: 1.5rem;
+    background: #fff; padding: 1.5rem 2rem; border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-bottom: 2rem;
+}
+.current-orders-header .profile-name__custom-ui-2 { color: #0d0d0d; font-size: 1.35rem; margin: 0 0 0.25rem 0; font-weight: 600; }
+.current-orders-header .profile-email__custom-ui-2 { color: #333; font-size: 0.95rem; margin: 0; }
+.current-orders-admin-module {
+    background: linear-gradient(135deg, #0A2B32 0%, #284660 100%); color: #fff; padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+}
+.current-orders-admin-module .admin-module-link {
+    color: #fff; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;
+}
+.current-orders-admin-module .admin-module-link:hover { text-decoration: underline; }
+.current-orders-admin-module .admin-module-desc { font-size: 0.9rem; opacity: 0.9; }
+.current-orders-online { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; color: #0a7c42; margin-left: auto; }
+.current-orders-online i { font-size: 0.6rem; }
+.current-orders-title { font-size: 1.5rem; font-weight: 700; color: #0A2B32; margin-bottom: 0.25rem; }
+.current-orders-subtitle { color: #6c757d; font-size: 0.95rem; margin-bottom: 1.5rem; }
+.current-orders-filters { background: #fff; padding: 1.25rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.orders-filter-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.orders-filter-label { font-weight: 600; color: #444; margin-right: 0.5rem; }
+.orders-filter-btn { padding: 6px 14px; border-radius: 6px; background: #f0f0f0; color: #333; text-decoration: none; font-size: 0.9rem; }
+.orders-filter-btn:hover { background: #e0e0e0; }
+.orders-filter-btn.active { background: #0A2B32; color: #fff; }
+.orders-search-form { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; }
+.orders-search-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
+.orders-search-form input { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; }
+.orders-search-form button { padding: 8px 16px; background: #0A2B32; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+.current-orders-list { display: flex; flex-direction: column; gap: 1.25rem; }
+.current-order-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); overflow: hidden; padding-bottom: 1rem; }
+.order-cancel-form { margin: 0 1.5rem 1rem; padding-top: 0.75rem; border-top: 1px solid #eee; }
+.order-cancel-btn { padding: 8px 14px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 6px; font-size: 0.9rem; cursor: pointer; }
+.order-cancel-btn:hover { background: #dc3545; color: #fff; }
+.current-orders-empty { padding: 3rem 2rem; background: #fff; border-radius: 12px; text-align: center; }
+.current-orders-pagination { display: flex; justify-content: center; gap: 8px; margin-top: 1.5rem; }
+.current-orders-pagination a, .current-orders-pagination span { padding: 8px 14px; border-radius: 6px; text-decoration: none; color: #0A2B32; font-weight: 500; border: 1px solid #ddd; background: #fff; }
+.current-orders-pagination a:hover { background: #f0f0f0; }
+.current-orders-pagination .current { background: #0A2B32; color: #fff; border-color: #0A2B32; }
+</style>
+{% endblock %}

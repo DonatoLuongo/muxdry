@@ -1,0 +1,151 @@
+{% load static %}
+<header class="main-header">
+    <div class="header-top">
+        <div class="logo-container">
+            <a href="{% url 'home' %}" class="logo">
+                <img src="{% static 'assets/Logotipos/Logo.svg' %}" alt="Logo Tienda">
+            </a>
+        </div>
+
+        <div class="search-container">
+            <form class="search-bar" action="{% url 'products:search' %}" method="get" role="search">
+                <select class="category-selector" name="cat" id="header-cat-select" aria-label="Categorías">
+                    <option value="">Todas las categorías</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.slug }}" {% if category and category.slug == cat.slug %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+                <input type="text" name="q" placeholder="Buscar productos..." value="{{ request.GET.q|default:'' }}" aria-label="Buscar productos">
+                <button type="submit" class="search-btn">
+                    <i class="fas fa-search"></i>
+                </button>
+            </form>
+        </div>
+
+        <div class="user-actions">
+            <div class="account-dropdown">
+                <div class="action-item account">
+                    <i class="fas fa-user-circle"></i>
+                    <div class="action-text">
+                        <span class="action-title">Mi Cuenta</span>
+                        <span class="action-subtitle">
+                            {% if user.is_authenticated %}
+                            {{ user.username }}
+                            {% else %}
+                            Iniciar sesión
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="dropdown-content">
+                    <div class="dropdown-arrow"></div>
+                    <div class="dropdown-section">
+                        <h3>Tu cuenta</h3>
+                        {% if user.is_authenticated %}
+                        <a href="{% url 'profile' %}">Historial de compras</a>
+                        <a href="{% url 'profile' %}?tab=settings">Configuración</a>
+                        {% else %}
+                        <a href="{% url 'login' %}">Historial de compras</a>
+                        <a href="{% url 'login' %}">Configuración</a>
+                        {% endif %}
+                    </div>
+                    <div class="dropdown-section" id="auth-section">
+                        {% if user.is_authenticated %}
+                        <form method="post" action="{% url 'logout' %}" class="logout-form-dropdown" style="margin:0;">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="/">
+                            <button type="submit" class="btn-logout-dropdown"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
+                        </form>
+                        {% else %}
+                        <a href="{% url 'login' %}" class="button primary">Iniciar sesión</a>
+                        <a href="{% url 'login' %}?register=true">¿Nuevo cliente? Regístrate</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-item orders">
+                <i class="fas fa-box-open"></i>
+                {% if user.is_authenticated %}<span class="orders-count">{% if orders_count %}{{ orders_count }}{% else %}0{% endif %}</span>{% endif %}
+                <div class="action-text">
+                    <a href="{% if user.is_authenticated %}{% url 'orders:current_orders' %}{% else %}{% url 'login' %}{% endif %}">
+                        <span class="action-title">Mis Pedidos</span>
+                    </a>
+                    <a href="{% if user.is_authenticated %}{% url 'orders:current_orders' %}{% else %}{% url 'login' %}{% endif %}">
+                        <span class="action-subtitle">Rastrear</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="action-item cart">
+                <i class="fas fa-shopping-cart"></i>
+                <span class="cart-count">{% if cart %}{{ cart.item_count }}{% else %}0{% endif %}</span>
+                <div class="action-text">
+                    <a href="{% url 'orders:cart' %}">
+                        <span class="action-title">Carrito</span>
+                    </a>
+                    <a href="{% url 'orders:cart' %}">
+                        <span class="action-subtitle">{% if cart %}${{ cart.total_price|floatformat:2 }}{% else %}$0.00{% endif %}</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="header-bottom" id="header-nav">
+        <div class="nav-container">
+            <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Abrir menú" aria-expanded="false">
+                <span class="nav-toggle-bar"></span>
+                <span class="nav-toggle-bar"></span>
+                <span class="nav-toggle-bar"></span>
+            </button>
+            <div class="nav-links" id="nav-links">
+                <a href="{% url 'home' %}" class="nav-link">Inicio</a>
+                <a href="{% url 'home' %}#mas-vendido" class="nav-link">Más vendidos</a>
+                <a href="{% url 'information' %}" class="nav-link">Servicio al Cliente</a>
+                <a href="{% url 'home' %}#ofertas-especiales" class="nav-link">Ofertas especiales</a>
+                <a href="{% url 'information' %}" class="nav-link">Sobre Nosotros</a>
+                <a href="{% url 'home' %}#contacto-footer" class="nav-link">Contacto</a>
+            </div>
+
+            <div class="nav-promo">
+                <a href="#" class="promo-link">¡Envío gratis por compras sobre 55$!</a>
+            </div>
+        </div>
+    </nav>
+</header>
+<script>
+(function() {
+    var sel = document.getElementById('header-cat-select');
+    if (sel) {
+        sel.addEventListener('change', function() {
+            var slug = this.value;
+            if (slug) {
+                window.location.href = '/products/categoria/' + slug + '/';
+            } else {
+                window.location.href = '/';
+            }
+        });
+    }
+    var toggle = document.getElementById('nav-toggle');
+    var nav = document.getElementById('header-nav');
+    var links = document.getElementById('nav-links');
+    if (toggle && nav) {
+        toggle.addEventListener('click', function() {
+            nav.classList.toggle('is-open');
+            toggle.setAttribute('aria-expanded', nav.classList.contains('is-open'));
+            toggle.setAttribute('aria-label', nav.classList.contains('is-open') ? 'Cerrar menú' : 'Abrir menú');
+        });
+        if (links) {
+            links.querySelectorAll('.nav-link').forEach(function(a) {
+                a.addEventListener('click', function() {
+                    nav.classList.remove('is-open');
+                    toggle.setAttribute('aria-expanded', 'false');
+                    toggle.setAttribute('aria-label', 'Abrir menú');
+                });
+            });
+        }
+    }
+})();
+</script>

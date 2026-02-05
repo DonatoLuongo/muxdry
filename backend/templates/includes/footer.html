@@ -1,0 +1,104 @@
+{% load static %}
+<footer class="main-footer" id="contacto-footer">
+    <div class="footer-partners">
+        <div class="container">
+            <div class="partners-title">Nuestros aliados comerciales</div>
+            <div class="partners-logos">
+                <div class="partners-group">
+                    <div class="partners-subtitle">Envíos Nacionales e Internacionales</div>
+                    <div class="logos-container">
+                        <img src="{% static 'assets/Logotipos/mrw.png' %}" alt="MRW">
+                        <img src="{% static 'assets/Logotipos/DOMESA-COLOR.png' %}" alt="Domesa">
+                        <img src="{% static 'assets/Logotipos/Logo-Zoom-Registrado.png' %}" alt="Zoom">
+                        <img src="{% static 'assets/Logotipos/TEALCA_US.png' %}" alt="Teacla">
+                        <img src="{% static 'assets/Logotipos/dhl.png' %}" alt="DHL">
+                    </div>
+                </div>
+                <div class="divider"></div>
+                <div class="partners-group">
+                    <div class="partners-subtitle">Marcas</div>
+                    <div class="logos-container">
+                        <img src="{% static 'assets/Logotipos/drysol.png' %}" alt="Drysol">
+                        <img src="{% static 'assets/Logotipos/duradry.png' %}" alt="Duradry">
+                        <img src="{% static 'assets/Logotipos/xerac.png' %}" alt="Xerac">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-divider"></div>
+
+    <div class="footer-main">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-column">
+                    <div class="footer-logo">
+                        <img src="{% static 'assets/Logotipos/Logo2.svg' %}" alt="Logo Tienda">
+                    </div>
+                    <div class="footer-contact">
+                        <p><i class="fas fa-map-marker-alt"></i> Caracas Av. Andres Bello, Torre Centro Andres Bello, Frente a la Plaza Andres Bello, Piso 15</p>
+                        <p><i class="fas fa-phone"></i> Teléfono: (58) 412991-4914</p>
+                        <p><i class="fas fa-envelope"></i> Email: informacion@muxdry.com</p>
+                    </div>
+                    <div class="footer-social">
+                        <a href="https://www.facebook.com/Mux.Dry" target="_blank" rel="noopener" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://api.whatsapp.com/send?phone=584129249298" target="_blank" rel="noopener" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                        <a href="https://www.instagram.com/mux.dry/" target="_blank" rel="noopener" title="Instagram"> <i class="fab fa-instagram"></i></a>
+                        <a href="https://www.tiktok.com/@mux.dry" target="_blank" rel="noopener" title="TikTok"><i class="fab fa-tiktok"></i></a>
+                        <a href="https://beacons.ai/mux.dry/mux.dry" target="_blank" rel="noopener" title="Todos nuestros enlaces (Beacons)"><i class="fas fa-link"></i></a>
+                    </div>
+                </div>
+
+                <div class="footer-column">
+                    <h5 class="footer-title">Información</h5>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'information' %}">Aviso legal</a></li>
+                        <li><a href="{% url 'information' %}">Mapa del sitio</a></li>
+                        <li><a href="{% url 'information' %}">Política de privacidad</a></li>
+                        <li><a href="{% url 'information' %}">Términos y condiciones</a></li>
+                        <li><a href="{% url 'information' %}">Sobre nosotros</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h5 class="footer-title">Mi cuenta</h5>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'profile' %}">Mi perfil</a></li>
+                        <li><a href="{% url 'profile' %}">Historial de pedidos</a></li>
+                        <li><a href="{% url 'profile' %}">Detalle del pedido</a></li>
+                        <li><a href="{% url 'profile' %}">Registro de compras</a></li>
+                        <li><a href="{% url 'profile' %}">Rastrear envíos</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h5 class="footer-title">Atención al cliente</h5>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'information' %}#contacto-footer">Contáctanos</a></li>
+                        <li><a href="{% url 'information' %}#contacto-footer">Métodos de pago</a></li>
+                        <li><a href="{% url 'information' %}#contacto-footer">Envíos y entregas</a></li>
+                        <li><a href="{% url 'information' %}#pago">Pago seguro</a></li>
+                        <li><a href="#">Compras al mayor</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-bottom">
+        <div class="container">
+            <div class="footer-bottom-content">
+                <div class="copyright">
+                    &copy; 2025 MULTIVENTAS XIMAREN C.A. - Todos los derechos reservados
+                </div>
+                <div class="payment-methods">
+                    <img src="{% static 'assets/Logotipos/Binance_Logo.png' %}" alt="Binance">
+                    <img src="{% static 'assets/Logotipos/PayPal_Logo.png' %}" alt="PayPal">
+                    <img src="{% static 'assets/Logotipos/Zinlin_Logo.png' %}" alt="Zinli">
+                    <img src="{% static 'assets/Logotipos/Banesco_Logo.png' %}" alt="Banesco">
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>

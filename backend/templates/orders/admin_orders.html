@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Panel de solicitudes - Admin - MUXDRY{% endblock %}
+
+{% block content %}
+<section class="admin-orders-section">
+    <div class="admin-orders-container">
+        <div class="admin-orders-header">
+            <h1><i class="fas fa-clipboard-list"></i> Panel de solicitudes de pedidos</h1>
+            <p>Solo administradores. Aquí puedes ver todas las solicitudes y actualizar su estado.</p>
+            <a href="{% url 'orders:current_orders' %}" class="admin-back-link"><i class="fas fa-arrow-left"></i> Volver a Mis pedidos</a>
+        </div>
+
+        <div class="admin-orders-filters">
+            <form method="get" class="admin-filters-form">
+                <label>
+                    <span>Estado:</span>
+                    <select name="status">
+                        <option value="">Todos</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>Período:</span>
+                    <select name="period">
+                        <option value="">Todos</option>
+                        <option value="3m" {% if period_filter == '3m' %}selected{% endif %}>Últimos 3 meses</option>
+                        <option value="year" {% if period_filter == 'year' %}selected{% endif %}>Este año</option>
+                    </select>
+                </label>
+                <label>
+                    <span>Buscar:</span>
+                    <input type="text" name="q" value="{{ q_filter|default:'' }}" placeholder="Nº pedido, email...">
+                </label>
+                <button type="submit"><i class="fas fa-search"></i> Filtrar</button>
+            </form>
+        </div>
+
+        <div class="admin-orders-list">
+            {% for order in orders %}
+            <div class="admin-order-card">
+                <div class="admin-order-main">
+                    <div class="admin-order-meta">
+                        <strong>#{{ order.order_number }}</strong>
+                        <span>{{ order.created_at|date:"d/m/Y H:i" }}</span>
+                        <span class="admin-order-status admin-order-status--{{ order.status }}">{{ order.get_status_display }}</span>
+                    </div>
+                    <div class="admin-order-user">
+                        <i class="fas fa-user"></i> {{ order.user.get_full_name|default:order.user.username }} — {{ order.user.email }}
+                    </div>
+                    <div class="admin-order-items">
+                        {% for item in order.items.all %}
+                        <span class="admin-order-item">{{ item.product.name }} × {{ item.quantity }} (${{ item.price }})</span>
+                        {% endfor %}
+                    </div>
+                    <div class="admin-order-total">
+                        Total: <strong>${{ order.total }}</strong>
+                    </div>
+                </div>
+                <div class="admin-order-actions">
+                    <form method="post" action="{% url 'orders:admin_orders' %}" class="admin-status-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="order_id" value="{{ order.id }}">
+                        <select name="new_status">
+                            {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit"><i class="fas fa-save"></i> Actualizar</button>
+                    </form>
+                </div>
+            </div>
+            {% empty %}
+            <div class="admin-orders-empty">
+                <i class="fas fa-inbox"></i>
+                <p>No hay pedidos con los filtros seleccionados.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="admin-orders-pagination">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}{% if q_filter %}&q={{ q_filter }}{% endif %}">&laquo; Anterior</a>
+            {% endif %}
+            <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}{% if q_filter %}&q={{ q_filter }}{% endif %}">Siguiente &raquo;</a>
+            {% endif %}
+        </nav>
+        {% endif %}
+    </div>
+</section>
+
+<style>
+.admin-orders-section { padding: 2rem 1rem 4rem; background: #f5f6f8; min-height: 60vh; }
+.admin-orders-container { max-width: 960px; margin: 0 auto; }
+.admin-orders-header { background: #fff; padding: 1.5rem 2rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+.admin-orders-header h1 { margin: 0 0 0.5rem 0; font-size: 1.5rem; color: #0A2B32; }
+.admin-orders-header h1 i { margin-right: 0.5rem; color: #284660; }
+.admin-orders-header p { margin: 0 0 1rem 0; color: #6c757d; font-size: 0.95rem; }
+.admin-back-link { display: inline-block; color: #0A2B32; text-decoration: none; font-weight: 500; }
+.admin-back-link:hover { text-decoration: underline; }
+.admin-orders-filters { background: #fff; padding: 1.25rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.admin-filters-form { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; }
+.admin-filters-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
+.admin-filters-form select, .admin-filters-form input { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; }
+.admin-filters-form button { padding: 8px 16px; background: #0A2B32; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+.admin-orders-list { display: flex; flex-direction: column; gap: 1rem; }
+.admin-order-card { display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: start; background: #fff; padding: 1.25rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #e5e9ec; }
+@media (max-width: 640px) { .admin-order-card { grid-template-columns: 1fr; } }
+.admin-order-meta { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+.admin-order-status { padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; }
+.admin-order-status--pending { background: #fff3cd; color: #856404; }
+.admin-order-status--confirmed { background: #cce5ff; color: #004085; }
+.admin-order-status--processing { background: #cfe2ff; color: #084298; }
+.admin-order-status--shipped { background: #d1e7dd; color: #0f5132; }
+.admin-order-status--delivered { background: #d1e7dd; color: #0f5132; }
+.admin-order-status--cancelled { background: #f8d7da; color: #842029; }
+.admin-order-user { font-size: 0.9rem; color: #555; margin-bottom: 0.5rem; }
+.admin-order-items { font-size: 0.9rem; color: #666; margin-bottom: 0.5rem; }
+.admin-order-item { display: inline-block; margin-right: 0.5rem; }
+.admin-order-total { font-size: 1rem; }
+.admin-order-actions .admin-status-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.admin-order-actions select { padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; }
+.admin-order-actions button { padding: 6px 12px; background: #284660; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+.admin-orders-empty { text-align: center; padding: 3rem; background: #fff; border-radius: 12px; color: #6c757d; }
+.admin-orders-pagination { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap; }
+.admin-orders-pagination a { padding: 8px 14px; background: #fff; border: 1px solid #ddd; border-radius: 6px; color: #0A2B32; text-decoration: none; }
+.admin-orders-pagination a:hover { background: #f0f0f0; }
+</style>
+{% endblock %}

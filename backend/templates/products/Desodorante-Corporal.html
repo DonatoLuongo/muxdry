@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Desodorante Corporal - MUXDRY</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/styles3.css">
+  <link rel="shortcut icon" href="/assets/Logoweb.svg" type="image/x-icon">
+</head>
+
+<body>
+  <!-- Header Principal -->
+  <header class="main-header">
+    <!-- Primera fila -->
+    <div class="header-top">
+      <div class="logo-container">
+        <a href="/views/index.html" class="logo">
+          <img src="/assets/Logotipos/Logo.svg" alt="Logo Tienda">
+        </a>
+      </div>
+
+      <div class="search-container">
+        <div class="search-bar">
+          <select class="category-selector">
+            <option>Todas las categorías</option>
+            <option>Cicatrices</option>
+            <option>Cuidado Capilar</option>
+            <option>Antiedad</option>
+            <option>Manchas</option>
+            <option>Limpieza Facial</option>
+            <option>Sudoración Excesiva</option>
+            <option>Rejuvenecimiento Facial</option>
+          </select>
+          <input type="text" placeholder="Buscar productos...">
+          <button class="search-btn">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="user-actions">
+        <div class="account-dropdown">
+          <div class="action-item account">
+            <i class="fas fa-user-circle"></i>
+            <div class="action-text">
+              <span class="action-title">Mi Cuenta</span>
+              <span class="action-subtitle">
+                <!-- Cambia dinámicamente según si está logueado -->
+                <span id="login-status">Iniciar sesión</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Dropdown que aparece al hacer hover -->
+          <div class="dropdown-content">
+            <div class="dropdown-arrow"></div>
+            <div class="dropdown-section">
+              <h3>Tu cuenta</h3>
+              <a href="/autenticado/perfil">Mis pedidos</a>
+              <a href="/autenticado/perfil">Historial de compras</a>
+              <a href="/autenticado/perfil">Configuración</a>
+            </div>
+            <div class="dropdown-section" id="auth-section">
+              <!-- Contenido dinámico según autenticación -->
+              <a href="/login" class="button primary">Iniciar sesión</a>
+              <a href="/login">¿Nuevo cliente? Regístrate</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-item orders">
+          <i class="fas fa-box-open"></i>
+          <div class="action-text">
+            <a href="/autenticado/perfil">
+              <span class="action-title">Mis Pedidos</span>
+            </a>
+            <a href="/autenticado/perfil">
+              <span class="action-subtitle">Rastrear</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="action-item cart">
+          <i class="fas fa-shopping-cart"></i>
+          <span class="cart-count">3</span>
+          <div class="action-text">
+            <a href="/autenticado/perfil">
+              <span class="action-title">Carrito</span>
+            </a>
+            <a href="/autenticado/perfil">
+              <span class="action-subtitle">$125.99</span>
+            </a>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Segunda fila con botones -->
+    <nav class="header-bottom">
+      <div class="nav-container">
+        <button class="nav-btn all-categories">
+          <i class="fas fa-bars"></i>
+          <span>Categorías</span>
+        </button>
+
+        <div class="nav-links">
+          <a href="/views/index.html#inicio" class="nav-link">Inicio</a>
+          <a href="/views/index.html#mas-vendido" class="nav-link">Más vendidos</a>
+          <a href="/views/information.html" class="nav-link">Servicio al Cliente</a>
+          <a href="/views/index.html#ofertas-especiales" class="nav-link">Ofertas especiales</a>
+          <a href="/views/information.html" class="nav-link">Sobre Nosotros</a>
+          <a href="#contacto-footer" class="nav-link">Contacto</a>
+        </div>
+
+        <div class="nav-promo">
+          <a href="#" class="promo-link">¡Envío gratis por compras sobre 55$!</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+
+  <!-- section 1 -->
+
+  <!-- Sección de detalle de producto -->
+  <section class="product-detail">
+    <div class="container">
+      <div class="product-detail-grid">
+        <!-- Galería de imágenes -->
+        <div class="product-gallery">
+          <div class="main-image">
+            <img src="/assets/products/Desodorant-Corporal/Duradry-Corporal.png" alt="Producto principal"
+              id="main-product-image">
+          </div>
+          <div class="thumbnail-container">
+            <div class="thumbnail active" data-image="/assets/products/Desodorant-Corporal/Duradry-Corporal.png">
+              <img src="/assets/products/Desodorant-Corporal/Duradry-Corporal.png" alt="Miniatura 1">
+            </div>
+            <div class="thumbnail" data-image="/assets/products/Desodorant-Corporal/Desodorante-Duradry-Corporal.png">
+              <img src="/assets/products/Desodorant-Corporal/Desodorante-Duradry-Corporal.png" alt="Miniatura 2">
+            </div>
+            <div class="thumbnail" data-image="/assets/products/Desodorant-Corporal/Duradry-Corporal2.png">
+              <img src="/assets/products/Desodorant-Corporal/Duradry-Corporal2.png" alt="Miniatura 3">
+            </div>
+            <div class="thumbnail" data-image="/assets/products/Desodorant-Corporal/Desodorante-Corporal.png">
+              <img src="/assets/products/Desodorant-Corporal/Desodorante-Corporal.png" alt="Miniatura 4">
+            </div>
+          </div>
+        </div>
+
+        <!-- Información del producto -->
+        <div class="product-info">
+          <h1 class="product-title">Desodorant Corporal Duradry</h1>
+          <div class="product-meta">
+            <span class="product-sku">USO DIARIO</span>
+            <div class="product-rating">
+              <div class="stars">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star-half-alt"></i>
+              </div>
+              <span class="rating-value">4.5</span>
+              <a href="#reviews" class="review-count">(128 reseñas)</a>
+            </div>
+          </div>
+
+          <div class="product-price">
+            <span class="current-price">$24.99</span>
+          </div>
+
+          <div class="product-description">
+            <p>Desodorante de cuerpo entero sin aluminio para hombres y mujeres, desodorante sin perfume para todo el
+              cuerpo, neutralizador de olores natural, transparente y sin residuos, no mancha.</p>
+            <p>Mantente seguro y libre de olores todo el día con el desodorante en aerosol Duradry para todo el cuerpo.
+              La mayoría de las personas pueden esperar aplicar el spray una o dos veces al día.
+              Aplicarlo en cualquier lugar. Nuestro spray corporal es seguro para cualquier parte del cuerpo maloliente
+              como axilas, pecho, pies y otras áreas sudorosas. Si tienes piel sensible, te recomendamos probar primero
+              el spray en un sitio pequeño. No mancha la ropa, este desodorante en aerosol sin aluminio para hombres y
+              mujeres es transparente, libre de residuos y de secado rápido, creando una capa protectora invisible sin
+              manchar la ropa.
+            </p>
+          </div>
+
+          <!-- Contenedor para los botones principales -->
+          <div class="product-main-actions">
+            <button class="btn-add-to-cart">
+              <i class="fas fa-shopping-cart"></i> Añadir al carrito
+            </button>
+            <button class="btn-buy-now">
+              Comprar ahora
+            </button>
+          </div>
+
+          <!-- Solo cantidad (eliminada la opción de tamaño) -->
+          <div class="option-quantity">
+            <label>Cantidad:</label>
+            <div class="quantity-selector">
+              <button class="quantity-btn minus"><i class="fas fa-minus"></i></button>
+              <input type="number" value="1" min="1" max="10">
+              <button class="quantity-btn plus"><i class="fas fa-plus"></i></button>
+            </div>
+          </div>
+
+
+
+          <div class="product-shipping">
+            <div class="shipping-info">
+              <i class="fas fa-truck"></i>
+              <span>Envío gratis en compras mayores a $55</span>
+            </div>
+            <div class="delivery-info">
+              <i class="fas fa-clock"></i>
+              <span>Recíbelo en 2-4 días hábiles</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sección de reseñas -->
+  <section class="product-reviews" id="reviews">
+    <div class="container">
+      <div class="reviews-header">
+        <h3>Reseñas de clientes</h3>
+        <div class="overall-rating">
+          <div class="rating-summary">
+            <div class="average-rating">4.5</div>
+            <div class="stars">
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star-half-alt"></i>
+            </div>
+            <div class="total-reviews">128 reseñas</div>
+          </div>
+          <div class="rating-bars">
+            <div class="rating-bar">
+              <span>5 estrellas</span>
+              <div class="bar-container">
+                <div class="bar" style="width: 70%;"></div>
+              </div>
+              <span>70%</span>
+            </div>
+            <div class="rating-bar">
+              <span>4 estrellas</span>
+              <div class="bar-container">
+                <div class="bar" style="width: 20%;"></div>
+              </div>
+              <span>20%</span>
+            </div>
+            <div class="rating-bar">
+              <span>3 estrellas</span>
+              <div class="bar-container">
+                <div class="bar" style="width: 5%;"></div>
+              </div>
+              <span>5%</span>
+            </div>
+            <div class="rating-bar">
+              <span>2 estrellas</span>
+              <div class="bar-container">
+                <div class="bar" style="width: 3%;"></div>
+              </div>
+              <span>3%</span>
+            </div>
+            <div class="rating-bar">
+              <span>1 estrella</span>
+              <div class="bar-container">
+                <div class="bar" style="width: 2%;"></div>
+              </div>
+              <span>2%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulario de reseña -->
+      <div class="review-form">
+        <h4>Escribe tu reseña</h4>
+        <form id="add-review-form">
+          <div class="form-group">
+            <label>Calificación</label>
+            <div class="rating-input">
+              <input type="radio" id="star5" name="rating" value="5">
+              <label for="star5"><i class="fas fa-star"></i></label>
+              <input type="radio" id="star4" name="rating" value="4">
+              <label for="star4"><i class="fas fa-star"></i></label>
+              <input type="radio" id="star3" name="rating" value="3">
+              <label for="star3"><i class="fas fa-star"></i></label>
+              <input type="radio" id="star2" name="rating" value="2">
+              <label for="star2"><i class="fas fa-star"></i></label>
+              <input type="radio" id="star1" name="rating" value="1">
+              <label for="star1"><i class="fas fa-star"></i></label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="review-title">Título</label>
+            <input type="text" id="review-title" placeholder="Resume tu opinión">
+          </div>
+          <div class="form-group">
+            <label for="review-text">Reseña</label>
+            <textarea id="review-text" rows="5" placeholder="¿Qué te pareció este producto?"></textarea>
+          </div>
+          <button type="submit" class="btn-submit-review">Enviar reseña</button>
+        </form>
+      </div>
+
+      <!-- Lista de reseñas -->
+      <div class="reviews-list">
+        <h4>Últimas reseñas</h4>
+
+        <!-- Reseña 1 -->
+        <div class="review-item">
+          <div class="review-header">
+            <div class="reviewer-info">
+              <div class="reviewer-name">María G.</div>
+              <div class="review-date">Hace 2 días</div>
+            </div>
+            <div class="review-rating">
+              <div class="stars">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+              </div>
+            </div>
+          </div>
+          <div class="review-title">Excelente producto</div>
+          <div class="review-text">
+            <p>Esta crema ha cambiado mi rutina de cuidado facial. Mi piel se siente hidratada todo el día sin esa
+              sensación grasosa que dejan otras cremas. Además, el aroma es muy suave y agradable. Definitivamente la
+              recomiendo.</p>
+          </div>
+        </div>
+
+        <!-- Reseña 2 -->
+        <div class="review-item">
+          <div class="review-header">
+            <div class="reviewer-info">
+              <div class="reviewer-name">Carlos R.</div>
+              <div class="review-date">Hace 1 semana</div>
+            </div>
+            <div class="review-rating">
+              <div class="stars">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="far fa-star"></i>
+              </div>
+            </div>
+          </div>
+          <div class="review-title">Muy buena relación calidad-precio</div>
+          <div class="review-text">
+            <p>Llevo un mes usándola y he notado mejoría en la textura de mi piel. No es milagrosa, pero por el precio
+              hace un trabajo excelente. El único detalle es que el envase podría ser más práctico.</p>
+          </div>
+        </div>
+
+        <!-- Reseña 3 -->
+        <div class="review-item">
+          <div class="review-header">
+            <div class="reviewer-info">
+              <div class="reviewer-name">Ana M.</div>
+              <div class="review-date">Hace 3 semanas</div>
+            </div>
+            <div class="review-rating">
+              <div class="stars">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star-half-alt"></i>
+              </div>
+            </div>
+          </div>
+          <div class="review-title">Buena pero...</div>
+          <div class="review-text">
+            <p>Funciona bien para hidratar, especialmente en invierno. Sin embargo, a mi piel mixta le resulta un poco
+              pesada para usar de día en verano. La uso solo por la noche y así me funciona perfecto.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+
+
+
+  <!-- FOOTER  -->
+  <footer class="main-footer" id="contacto-footer">
+    <!-- Sección de partners/logos -->
+    <div class="footer-partners">
+      <div class="container">
+        <div class="partners-title">Nuestros aliados comerciales</div>
+        <div class="partners-logos">
+          <div class="partners-group">
+            <div class="partners-subtitle">Envíos Nacionales e Internacionales</div>
+            <div class="logos-container">
+              <img src="/assets/Logotipos/mrw.png" alt="MRW">
+              <img src="/assets/Logotipos/DOMESA-COLOR.png" alt="Domesa">
+              <img src="/assets/Logotipos/Logo-Zoom-Registrado.png" alt="Zoom">
+              <img src="/assets/Logotipos/TEALCA_US.png" alt="Teacla">
+              <img src="/assets/Logotipos/dhl.png" alt="DHL">
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="partners-group">
+            <div class="partners-subtitle">Marcas</div>
+            <div class="logos-container">
+              <img src="/assets/Logotipos/drysol.png" alt="Drysol">
+              <img src="/assets/Logotipos/duradry.png" alt="Duradry">
+              <img src="/assets/Logotipos/xerac.png" alt="Xerac">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Línea divisora -->
+    <div class="footer-divider"></div>
+
+    <!-- Sección principal del footer -->
+    <div class="footer-main">
+      <div class="container">
+        <div class="footer-grid">
+          <!-- Columna de contacto -->
+          <div class="footer-column">
+            <div class="footer-logo">
+              <img src="/assets/Logotipos/Logo2.svg" alt="Logo Tienda">
+            </div>
+            <div class="footer-contact">
+              <p><i class="fas fa-map-marker-alt"></i> Caracas Av. Andres Bello, Torre Centro Andres
+                Bello, Frente a la Plaza Andres Bello, Piso 15</p>
+              <p><i class="fas fa-phone"></i> Teléfono: (58) 412991-4914</p>
+              <p><i class="fas fa-envelope"></i> Email: informacion@muxdry.com</p>
+            </div>
+            <div class="footer-social">
+              <a href="https://www.facebook.com/Mux.Dry" target="_blank"><i class="fab fa-facebook-f"></i></a>
+              <a href="https://api.whatsapp.com/send?phone=584129249298" target="_blank"><i
+                  class="fab fa-whatsapp"></i></a>
+              <a href="https://www.instagram.com/MUX.DRY/" target="_blank"><i class="fab fa-instagram"></i></a>
+              <a href="https://www.tiktok.com/@mux.dry" target="_blank"><i class="fab fa-tiktok"></i></a>
+            </div>
+          </div>
+
+          <!-- Columna de enlaces 1 -->
+          <div class="footer-column">
+            <h5 class="footer-title">Información</h5>
+            <ul class="footer-links">
+              <li><a href="/views/information.html">Aviso legal</a></li>
+              <li><a href="/views/information.html">Mapa del sitio</a></li>
+              <li><a href="/views/information.html">Política de privacidad</a></li>
+              <li><a href="/views/information.html">Términos y condiciones</a></li>
+              <li><a href="/views/information.html">Sobre nosotros</a></li>
+            </ul>
+          </div>
+
+          <!-- Columna de enlaces 2 -->
+          <div class="footer-column">
+            <h5 class="footer-title">Mi cuenta</h5>
+            <ul class="footer-links">
+              <li><a href="/views/perfil.html">Mi perfil</a></li>
+              <li><a href="/views/perfil.html">Historial de pedidos</a></li>
+              <li><a href="/views/perfil.html">Detalle del pedido</a></li>
+              <li><a href="/views/perfil.html">Registro de compras</a></li>
+              <li><a href="/views/perfil.html">Rastrear envíos</a></li>
+            </ul>
+          </div>
+
+          <!-- Columna de enlaces 3 -->
+          <div class="footer-column">
+            <h5 class="footer-title">Atención al cliente</h5>
+            <ul class="footer-links">
+              <li><a href="/views/Barra-AM.html#contacto-footer">Contáctanos</a></li>
+              <li><a href="/views/Barra-AM.html#contacto-footer">Métodos de pago</a></li>
+              <li><a href="/views/Barra-AM.html#contacto-footer">Envíos y entregas</a></li>
+              <li><a href="/views/information.html#Pago-seguro">Pago seguro</a></li>
+              <li><a href="#">Compras al mayor</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pie de página inferior -->
+    <div class="footer-bottom">
+      <div class="container">
+        <div class="footer-bottom-content">
+          <div class="copyright">
+            &copy; 2025 MULTIVENTAS XIMAREN C.A. - Todos los derechos reservados
+          </div>
+          <div class="payment-methods">
+            <img src="/assets/Logotipos/Binance_Logo.png" alt="Binance">
+            <img src="/assets/Logotipos/PayPal_Logo.png" alt="PayPal">
+            <img src="/assets/Logotipos/Zinlin_Logo.png" alt="Zinli">
+            <img src="/assets/Logotipos/Banesco_Logo.png" alt="Banesco">
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+
+  <script src="/static/script.js"></script>
+</body>
+
+</html>

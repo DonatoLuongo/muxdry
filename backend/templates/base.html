@@ -1,0 +1,62 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MULTIVENTAS - MUX{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <link rel="shortcut icon" href="{% static 'assets/Logoweb.svg' %}" type="image/x-icon">
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <!-- Header -->
+    {% include 'includes/header.html' %}
+
+    <!-- Contenido principal -->
+    <main>
+        {% block content %}
+        <!-- El contenido específico de cada página va aquí -->
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    {% include 'includes/footer.html' %}
+
+    <!-- Toast: producto agregado al carrito (derecha, suave) -->
+    <div id="cart-toast" class="cart-toast" aria-live="polite" role="status" style="display:none;">
+        <i class="fas fa-check-circle"></i> Producto agregado al carrito
+    </div>
+
+    <!-- Scripts base -->
+    <script src="{% static 'script.js' %}"></script>
+    <script>
+    (function() {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('cart_added') === '1') {
+            var toast = document.getElementById('cart-toast');
+            if (toast) {
+                toast.style.display = 'flex';
+                setTimeout(function() {
+                    toast.classList.add('cart-toast--show');
+                }, 50);
+                setTimeout(function() {
+                    toast.classList.remove('cart-toast--show');
+                    setTimeout(function() { toast.style.display = 'none'; }, 300);
+                }, 2800);
+            }
+            if (history.replaceState) {
+                params.delete('cart_added');
+                var newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash;
+                history.replaceState({}, '', newUrl);
+            }
+        }
+    })();
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

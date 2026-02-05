@@ -1,0 +1,16 @@
+# No subir claves ni datos locales
+.env
+.env.*
+!.env.example
+
+# Python (por si se crean en la raíz)
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Django (collectstatic, DB local)
+backend/staticfiles/
+backend/media/
+backend/db.sqlite3
+backend/db.sqlite3-journal

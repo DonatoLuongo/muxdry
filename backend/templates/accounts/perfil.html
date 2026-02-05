@@ -1,0 +1,194 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Perfil - MUXDRY</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'styles.css' %}">
+  <link rel="shortcut icon" href="{% static 'assets/Logoweb.svg' %}" type="image/x-icon">
+</head>
+
+<body>
+  {% include 'includes/header.html' %}
+
+  <section class="profile-section__custom-ui-2">
+    <div class="profile-container__custom-ui-2">
+      <div class="profile-header__custom-ui-2">
+        <div class="profile-avatar__custom-ui-2">
+          <img src="{% static 'assets/Perfil-Default.jpeg' %}" alt="Perfil" class="profile-logo__custom-ui-2">
+        </div>
+        <div class="profile-info__custom-ui-2">
+          <h1 class="profile-name__custom-ui-2">{{ user.get_full_name|default:user.username }}</h1>
+          <p class="profile-email__custom-ui-2">{{ user.email|default:"" }}</p>
+        </div>
+        <p>En línea <i class="fa-solid fa-circle" style="color: green;"></i></p>
+      </div>
+
+      <nav class="profile-nav__custom-ui-2">
+        <ul class="profile-nav-list__custom-ui-2">
+          <li class="profile-nav-item__custom-ui-2 {% if request.GET.tab != 'settings' %}active{% endif %}" data-tab="order-history">Historial de compras</li>
+          <li class="profile-nav-item__custom-ui-2 {% if request.GET.tab == 'settings' %}active{% endif %}" data-tab="settings">Configuración</li>
+        </ul>
+      </nav>
+
+      <div class="profile-content__custom-ui-2">
+        <!-- Historial de compras -->
+        <div class="profile-tab__custom-ui-2 {% if request.GET.tab == 'settings' %}hidden{% endif %}" id="order-history">
+          <h2 class="profile-tab-title__custom-ui-2">Historial de compras</h2>
+          <div class="history-toolbar">
+            <div class="history-filters__custom-ui-2">
+              <span class="history-filters-label">Período:</span>
+              <a href="{% url 'profile' %}?tab=order-history" class="history-filter-btn__custom-ui-2 {% if not historial_period and not historial_date and not historial_q %}active{% endif %}">Todos</a>
+              <a href="{% url 'profile' %}?tab=order-history&period=3m" class="history-filter-btn__custom-ui-2 {% if historial_period == '3m' %}active{% endif %}">Últimos 3 meses</a>
+              <a href="{% url 'profile' %}?tab=order-history&period=year" class="history-filter-btn__custom-ui-2 {% if historial_period == 'year' %}active{% endif %}">Este año</a>
+            </div>
+            <form method="get" action="{% url 'profile' %}" class="history-search-form__custom-ui-2">
+              {% if historial_period %}<input type="hidden" name="period" value="{{ historial_period }}">{% endif %}
+              <input type="hidden" name="tab" value="order-history">
+              <div class="history-search-row">
+                <label class="history-search-field">
+                  <span class="history-search-label">Fecha</span>
+                  <input type="date" name="date" value="{{ historial_date|default:'' }}">
+                </label>
+                <label class="history-search-field history-search-field--wide">
+                  <span class="history-search-label">Buscar por nº pedido o texto</span>
+                  <input type="text" name="q" placeholder="Ej: MUX-20260203-ABC123" value="{{ historial_q|default:'' }}">
+                </label>
+                <button type="submit" class="history-search-btn"><i class="fas fa-search"></i> Buscar</button>
+              </div>
+            </form>
+          </div>
+          <div class="profile-history__custom-ui-2">
+            {% for pedido in historial_pedidos %}
+            <div class="history-item__custom-ui-2">
+              <div class="order-header__custom-ui-2">
+                <span class="order-id__custom-ui-2">#{{ pedido.order_number }}</span>
+                <span class="order-date__custom-ui-2">{{ pedido.created_at|date:"d M Y" }}</span>
+                <span class="order-status__custom-ui-2 completed">{{ pedido.get_status_display }}</span>
+              </div>
+              <div class="order-summary__custom-ui-2">
+                {% for item in pedido.items.all %}
+                <div class="order-product-preview__custom-ui-2">
+                  <img src="{% if item.product.image %}{{ item.product.image.url }}{% else %}{% static 'assets/products/Drysol/Drysol-2.png' %}{% endif %}" alt="{{ item.product.name }}" class="order-product-img__custom-ui-2">
+                  <div>
+                    <h3 class="order-product-name__custom-ui-2">{{ item.product.name }}</h3>
+                    <p class="order-product-desc__custom-ui-2">Cantidad: {{ item.quantity }} × ${{ item.price }}</p>
+                  </div>
+                </div>
+                {% endfor %}
+                <div class="order-meta__custom-ui-2">
+                  <div class="order-meta-item__custom-ui-2">
+                    <span class="meta-label__custom-ui-2">Total:</span>
+                    <span class="meta-value__custom-ui-2">${{ pedido.total }}</span>
+                  </div>
+                  <div class="order-meta-item__custom-ui-2">
+                    <span class="meta-label__custom-ui-2">Método de pago:</span>
+                    <span class="meta-value__custom-ui-2">{{ pedido.get_payment_method_display }}</span>
+                  </div>
+                </div>
+              </div>
+              <button class="order-details-btn__custom-ui-2" data-order="{{ pedido.order_number }}">Ver detalles</button>
+            </div>
+            {% empty %}
+            <div class="no-orders-message">
+              <i class="fas fa-history"></i>
+              <h3>No hay historial de compras</h3>
+              <p>Tus pedidos completados aparecerán aquí</p>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Configuración: diseño profesional -->
+        <div class="profile-tab__custom-ui-2 {% if request.GET.tab != 'settings' %}hidden{% endif %}" id="settings">
+          <h2 class="profile-tab-title__custom-ui-2">Configuración de cuenta</h2>
+          <div class="profile-settings__custom-ui-2 profile-settings--pro">
+            {% if user.is_superuser %}
+            <section class="settings-card settings-card--pro settings-card--admin-grant" style="grid-column: 1 / -1;">
+              <div class="settings-card-header">
+                <span class="settings-card-icon"><i class="fas fa-user-shield"></i></span>
+                <h3 class="settings-card-title">Gestión de administradores</h3>
+                <p class="settings-card-desc">Concede acceso de administrador (panel de solicitudes y más) a un usuario por su correo. Solo superusuarios pueden ver esta sección.</p>
+              </div>
+              <form method="POST" action="{% url 'grant_staff' %}" class="settings-form settings-form--pro admin-grant-form">
+                {% csrf_token %}
+                <div class="form-group__custom-ui-2 form-group--pro">
+                  <label for="admin_email" class="form-label__custom-ui-2">Correo del usuario a promover</label>
+                  <input type="email" id="admin_email" name="admin_email" class="form-input__custom-ui-2 form-input--pro" required placeholder="ejemplo@email.com">
+                </div>
+                <button type="submit" class="btn-settings-primary"><i class="fas fa-user-plus"></i> Conceder acceso de administrador</button>
+              </form>
+            </section>
+            {% endif %}
+            <section class="settings-card settings-card--pro">
+              <div class="settings-card-header">
+                <span class="settings-card-icon"><i class="fas fa-envelope"></i></span>
+                <h3 class="settings-card-title">Datos de contacto</h3>
+                <p class="settings-card-desc">Actualiza tu correo y teléfono para notificaciones y soporte.</p>
+              </div>
+              <form class="settings-form settings-form--pro" id="editProfileForm" method="POST" action="{% url 'edit_profile' %}">
+                {% csrf_token %}
+                <div class="settings-form-row">
+                  <div class="form-group__custom-ui-2 form-group--pro">
+                    <label for="email" class="form-label__custom-ui-2">Correo electrónico</label>
+                    <input type="email" id="email" name="email" class="form-input__custom-ui-2 form-input--pro" value="{{ user.email }}" placeholder="tu@email.com">
+                  </div>
+                  <div class="form-group__custom-ui-2 form-group--pro">
+                    <label for="phone" class="form-label__custom-ui-2">Teléfono</label>
+                    <input type="text" id="phone" name="phone" class="form-input__custom-ui-2 form-input--pro" value="{% if user_profile %}{{ user_profile.phone }}{% endif %}" placeholder="+58 412 0000000">
+                  </div>
+                </div>
+                <button type="submit" class="btn-settings-primary"><i class="fas fa-save"></i> Guardar cambios</button>
+              </form>
+            </section>
+            <section class="settings-card settings-card--pro">
+              <div class="settings-card-header">
+                <span class="settings-card-icon"><i class="fas fa-lock"></i></span>
+                <h3 class="settings-card-title">Seguridad</h3>
+                <p class="settings-card-desc">Cambia tu contraseña de acceso de forma segura.</p>
+              </div>
+              <form method="POST" action="{% url 'change_password' %}" class="settings-form settings-form--pro">
+                {% csrf_token %}
+                <div class="form-group__custom-ui-2 form-group--pro">
+                  <label for="current_password" class="form-label__custom-ui-2">Contraseña actual</label>
+                  <input type="password" id="current_password" name="current_password" class="form-input__custom-ui-2 form-input--pro" required placeholder="••••••••">
+                </div>
+                <div class="settings-form-row">
+                  <div class="form-group__custom-ui-2 form-group--pro">
+                    <label for="new_password" class="form-label__custom-ui-2">Nueva contraseña</label>
+                    <input type="password" id="new_password" name="new_password" class="form-input__custom-ui-2 form-input--pro" required minlength="8" placeholder="Mínimo 8 caracteres">
+                  </div>
+                  <div class="form-group__custom-ui-2 form-group--pro">
+                    <label for="new_password_confirm" class="form-label__custom-ui-2">Confirmar contraseña</label>
+                    <input type="password" id="new_password_confirm" name="new_password_confirm" class="form-input__custom-ui-2 form-input--pro" required minlength="8" placeholder="Repite la nueva contraseña">
+                  </div>
+                </div>
+                <button type="submit" class="btn-settings-primary"><i class="fas fa-key"></i> Cambiar contraseña</button>
+              </form>
+            </section>
+          </div>
+        </div>
+
+        <!-- Modal detalles pedido -->
+        <div class="order-modal__custom-ui-2" id="order-modal">
+          <div class="modal-content__custom-ui-2">
+            <span class="close-modal__custom-ui-2">&times;</span>
+            <h2 class="modal-title__custom-ui-2">Detalles del pedido <span id="modal-order-id"></span></h2>
+            <div class="modal-body__custom-ui-2">
+              <div id="modal-order-details"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {% include 'includes/footer.html' %}
+
+  <script src="{% static 'script.js' %}"></script>
+  <script src="{% static 'perfil.js' %}"></script>
+</body>
+</html>
