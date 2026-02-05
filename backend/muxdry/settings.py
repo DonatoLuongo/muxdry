@@ -62,12 +62,12 @@ TEMPLATES = [
     },
 ]
 
-# Database PostgreSQL (local: .env con DB_NAME, DB_USER, etc. | producción: DATABASE_URL)
+# Database: DATABASE_URL (Render) | DB_* (.env local) | SQLite (fallback para build sin DB)
 _db_url = config('DATABASE_URL', default='')
 if _db_url:
     import dj_database_url
     DATABASES = {'default': dj_database_url.config(default=_db_url, conn_max_age=600)}
-else:
+elif config('DB_NAME', default=''):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -76,6 +76,14 @@ else:
             'PASSWORD': config('DB_PASSWORD'),
             'HOST': config('DB_HOST'),
             'PORT': config('DB_PORT'),
+        }
+    }
+else:
+    # Fallback SQLite: build en Render sin PostgreSQL, o desarrollo sin .env
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
 
