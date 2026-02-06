@@ -3,11 +3,13 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import RedirectView
+from muxdry.views import health_check_view
 from products.views import home_view, information_view, contact_view
 from accounts.views import RegisterAPIView, LoginAPIView, ProfileAPIView, LogoutAPIView, SyncSessionAPIView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('health/', health_check_view),
     path('', home_view, name='home'),
     path('information/', information_view, name='information'),
     path('contacto/', contact_view, name='contact'),

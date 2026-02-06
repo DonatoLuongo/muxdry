@@ -1,4 +1,10 @@
+from django.http import HttpResponse
 from django.shortcuts import render
+
+
+def health_check_view(request):
+    """Ruta para el health check de Render (monitoreo del servicio)."""
+    return HttpResponse("ok", content_type="text/plain")
 
 
 def custom_404_view(request, exception=None):
