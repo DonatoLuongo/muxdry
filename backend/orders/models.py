@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from products.models import Product
+from encrypted_fields.fields import EncryptedTextField
 import uuid
 from django.utils import timezone
 
@@ -56,11 +57,30 @@ class Order(models.Model):
     ]
 
     PAYMENT_METHOD_CHOICES = [
-        ('transfer', 'Transferencia'),
-        ('crypto', 'Criptomoneda'),
+        ('binance', 'Binance'),
         ('paypal', 'PayPal'),
+        ('zinli', 'Zinli'),
+        ('banesco', 'Banesco'),
+        ('pago_movil', 'Pago Móvil'),
+        ('transfer', 'Transferencia Bancaria'),
+        ('crypto', 'Criptomoneda'),
         ('card', 'Tarjeta'),
         ('other', 'Otro'),
+    ]
+
+    SHIPPING_TYPE_CHOICES = [
+        ('delivery_caracas', 'Delivery Caracas'),
+        ('delivery_national', 'Envío nacional'),
+        ('office_pickup', 'Retiro en oficina'),
+    ]
+
+    SHIPPING_AGENCY_CHOICES = [
+        ('mrw', 'MRW'),
+        ('domesa', 'DOMESA'),
+        ('zoom', 'ZOOM'),
+        ('tealca', 'TEALCA'),
+        ('dhl', 'DHL'),
+        ('', 'N/A'),
     ]
 
     PAYMENT_STATUS_CHOICES = [
@@ -79,7 +99,14 @@ class Order(models.Model):
     tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
+    # Datos del cliente (confirmación)
+    document = models.CharField(max_length=50, blank=True, verbose_name='Cédula/RIF/Pasaporte')
+
     # Envío
+    shipping_type = models.CharField(max_length=30, choices=SHIPPING_TYPE_CHOICES, default='delivery_caracas', blank=True)
+    shipping_agency = models.CharField(max_length=20, choices=SHIPPING_AGENCY_CHOICES, blank=True)
+    office_pickup = models.BooleanField(default=False, verbose_name='Retiro en oficina')
+    central_address = models.TextField(blank=True, verbose_name='Dirección corta y céntrica')
     shipping_name = models.CharField(max_length=200, blank=True)
     shipping_address = models.TextField(blank=True)
     shipping_city = models.CharField(max_length=100, blank=True)
@@ -115,3 +142,18 @@ class OrderItem(models.Model):
     @property
     def total(self):
         return self.price * self.quantity
+
+
+class OrderMessage(models.Model):
+    """Mensajes entre admin y cliente (chat de pedidos). message encriptado en reposo."""
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    message = EncryptedTextField()
+    image = models.ImageField(upload_to='order_messages/%Y/%m/', blank=True, null=True, verbose_name='Comprobante de pago')
+    is_from_admin = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True, blank=True)  # cuando el cliente lee mensaje del admin
+    read_by_admin_at = models.DateTimeField(null=True, blank=True)  # cuando el admin lee mensaje del cliente
+
+    class Meta:
+        ordering = ['created_at']

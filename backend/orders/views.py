@@ -4,12 +4,14 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from django.db import transaction, models
+from django.db.models import Count
 from django.core.mail import send_mail
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from .models import Order, OrderItem, Cart, CartItem
+from .models import Order, OrderItem, Cart, CartItem, OrderMessage
 from .serializers import OrderSerializer, CreateOrderSerializer
 from products.models import Product
 
@@ -166,7 +168,8 @@ def add_to_cart_view(request):
     messages.success(request, f'"{product.name}" añadido al carrito.')
     next_url = request.POST.get('next', '').strip()
     if next_url and next_url.startswith('/') and not next_url.startswith('//'):
-        return redirect(next_url)
+        sep = '&' if '?' in next_url else '?'
+        return redirect(next_url + sep + 'cart_added=1')
     from urllib.parse import urlparse
     referer = request.META.get('HTTP_REFERER') or ''
     parsed = urlparse(referer)
@@ -224,11 +227,22 @@ def admin_orders_view(request):
         orders_qs = orders_qs.filter(
             models.Q(order_number__icontains=q) | models.Q(user__email__icontains=q) | models.Q(notes__icontains=q)
         )
-    paginator = Paginator(orders_qs, 15)
+    paginator = Paginator(orders_qs, 18)
     page = request.GET.get('page', 1)
     page_obj = paginator.get_page(page)
+    orders_list = page_obj.object_list
+    order_ids = [o.id for o in orders_list]
+    unread_client_counts = dict(
+        OrderMessage.objects.filter(
+            order_id__in=order_ids,
+            is_from_admin=False,
+            read_by_admin_at__isnull=True
+        ).values('order_id').annotate(c=Count('id')).values_list('order_id', 'c')
+    )
+    orders_with_unread = [(o, unread_client_counts.get(o.id, 0)) for o in orders_list]
     context = {
-        'orders': page_obj.object_list,
+        'orders': orders_list,
+        'orders_with_unread': orders_with_unread,
         'page_obj': page_obj,
         'status_filter': status_filter,
         'period_filter': period,
@@ -267,13 +281,22 @@ def current_orders_view(request):
             models.Q(order_number__icontains=q) | models.Q(notes__icontains=q)
         )
 
-    paginator = Paginator(pedidos_qs, 10)
+    paginator = Paginator(pedidos_qs, 18)
     page = request.GET.get('page', 1)
     page_obj = paginator.get_page(page)
     pedidos = page_obj.object_list
 
+    from django.db.models import Count
+    order_ids = [p.id for p in pedidos]
+    unread_counts = dict(
+        OrderMessage.objects.filter(order_id__in=order_ids, is_from_admin=True, read_at__isnull=True)
+        .values('order_id').annotate(c=Count('id')).values_list('order_id', 'c')
+    )
+    pedidos_with_unread = [(p, unread_counts.get(p.id, 0)) for p in pedidos]
+
     context = {
         'pedidos': pedidos,
+        'pedidos_with_unread': pedidos_with_unread,
         'page_obj': page_obj,
         'filtro_period': period,
         'filtro_date': date_param,
@@ -327,7 +350,7 @@ def cart_view(request):
     from django.core.paginator import Paginator
     cart, _ = Cart.objects.get_or_create(user=request.user)
     items_all = cart.items.select_related('product').all()
-    paginator = Paginator(items_all, 10)
+    paginator = Paginator(items_all, 18)
     page = request.GET.get('page', 1)
     page_obj = paginator.get_page(page)
     items = page_obj.object_list
@@ -395,7 +418,7 @@ def update_cart_item_view(request):
 
 @login_required
 def create_order_from_cart_view(request):
-    """Crea Order desde el carrito, vacía el carrito y envía email al admin."""
+    """Crea Order desde el carrito con formulario extendido (datos, pago, envío)."""
     if request.method != 'POST':
         return redirect('orders:cart')
     cart = get_object_or_404(Cart, user=request.user)
@@ -403,6 +426,21 @@ def create_order_from_cart_view(request):
     if not cart_items.exists():
         messages.warning(request, 'El carrito está vacío.')
         return redirect('orders:cart')
+
+    first_name = (request.POST.get('first_name') or '').strip() or (request.user.first_name or '')
+    last_name = (request.POST.get('last_name') or '').strip() or (request.user.last_name or '')
+    document = (request.POST.get('document') or '').strip()
+    payment_method = request.POST.get('payment_method') or 'transfer'
+    shipping_type = request.POST.get('shipping_type') or 'delivery_caracas'
+    shipping_agency = (request.POST.get('shipping_agency') or '').strip()
+    office_pickup = request.POST.get('office_pickup') == 'on'
+    central_address = (request.POST.get('central_address') or '').strip()
+    shipping_address = (request.POST.get('shipping_address') or '').strip()
+    shipping_city = (request.POST.get('shipping_city') or '').strip()
+    shipping_phone = (request.POST.get('shipping_phone') or '').strip()
+    notes = (request.POST.get('notes') or '').strip()
+    shipping_name = f"{first_name} {last_name}".strip() or request.user.get_full_name() or request.user.username
+
     subtotal = cart.total_price
     shipping = 0
     tax = 0
@@ -411,9 +449,18 @@ def create_order_from_cart_view(request):
         order = Order.objects.create(
             user=request.user,
             status='pending',
-            payment_method='transfer',
-            shipping_name=request.user.get_full_name() or request.user.username,
+            payment_method=payment_method,
+            document=document,
+            shipping_type=shipping_type,
+            shipping_agency=shipping_agency or '',
+            office_pickup=office_pickup,
+            central_address=central_address,
+            shipping_name=shipping_name,
+            shipping_address=shipping_address,
+            shipping_city=shipping_city,
+            shipping_phone=shipping_phone,
             shipping_email=request.user.email or '',
+            notes=notes,
             subtotal=subtotal,
             shipping=shipping,
             tax=tax,
@@ -446,13 +493,17 @@ def create_order_from_cart_view(request):
             )
     except Exception:
         pass
-    messages.success(request, f'Pedido {order.order_number} realizado correctamente.')
+    messages.success(
+        request,
+        '¡Solicitud enviada exitosamente! Será atendida lo antes posible. '
+        'Puedes ver el progreso en Mis pedidos.'
+    )
     return redirect('orders:current_orders')
 
 
 @login_required
 def create_order_single_item_view(request):
-    """Crea un pedido solo con el ítem indicado del carrito (comprar solo ese producto)."""
+    """Crea un pedido solo con el ítem indicado del carrito (comprar solo ese producto). Usa el mismo formulario que create_order_from_cart."""
     if request.method != 'POST':
         return redirect('orders:cart')
     item_id = request.POST.get('item_id')
@@ -470,17 +521,41 @@ def create_order_single_item_view(request):
     shipping = 0
     tax = 0
     total = subtotal + shipping + tax
+
+    first_name = (request.POST.get('first_name') or '').strip() or (request.user.first_name or '')
+    last_name = (request.POST.get('last_name') or '').strip() or (request.user.last_name or '')
+    document = (request.POST.get('document') or '').strip()
+    payment_method = request.POST.get('payment_method') or 'transfer'
+    shipping_type = request.POST.get('shipping_type') or 'delivery_caracas'
+    shipping_agency = (request.POST.get('shipping_agency') or '').strip()
+    office_pickup = request.POST.get('office_pickup') == 'on'
+    central_address = (request.POST.get('central_address') or '').strip()
+    shipping_address = (request.POST.get('shipping_address') or '').strip()
+    shipping_city = (request.POST.get('shipping_city') or '').strip()
+    shipping_phone = (request.POST.get('shipping_phone') or '').strip()
+    notes = (request.POST.get('notes') or '').strip()
+    shipping_name = f"{first_name} {last_name}".strip() or request.user.get_full_name() or request.user.username
+
     with transaction.atomic():
         order = Order.objects.create(
             user=request.user,
             status='pending',
-            payment_method='transfer',
-            shipping_name=request.user.get_full_name() or request.user.username,
+            payment_method=payment_method,
+            document=document,
+            shipping_type=shipping_type,
+            shipping_agency=shipping_agency or '',
+            office_pickup=office_pickup,
+            central_address=central_address,
+            shipping_name=shipping_name,
+            shipping_address=shipping_address,
+            shipping_city=shipping_city,
+            shipping_phone=shipping_phone,
             shipping_email=request.user.email or '',
             subtotal=subtotal,
             shipping=shipping,
             tax=tax,
             total=total,
+            notes=notes,
         )
         OrderItem.objects.create(
             order=order,
@@ -510,3 +585,141 @@ def create_order_single_item_view(request):
         pass
     messages.success(request, f'Pedido {order.order_number} realizado (solo ese producto).')
     return redirect('orders:current_orders')
+
+
+def _order_detail_data(order):
+    """Helper para serializar detalle de pedido incluyendo mensajes."""
+    items = [{'name': i.product.name, 'quantity': i.quantity, 'price': str(i.price), 'total': str(i.total)} for i in order.items.all()]
+    msgs = []
+    for m in order.messages.all().order_by('created_at'):
+        d = {'id': m.id, 'message': m.message, 'is_from_admin': m.is_from_admin, 'created_at': m.created_at.strftime('%d/%m/%Y %H:%M')}
+        d['image_url'] = m.image.url if m.image else None
+        msgs.append(d)
+    return {
+        'order_number': order.order_number,
+        'created_at': order.created_at.strftime('%d/%m/%Y %H:%M'),
+        'status': order.get_status_display(),
+        'payment_method': order.get_payment_method_display(),
+        'document': order.document or '—',
+        'shipping_type': dict(Order.SHIPPING_TYPE_CHOICES).get(order.shipping_type, order.shipping_type or '—'),
+        'shipping_agency': dict(Order.SHIPPING_AGENCY_CHOICES).get(order.shipping_agency, order.shipping_agency or '—'),
+        'office_pickup': order.office_pickup,
+        'central_address': order.central_address or '—',
+        'shipping_name': order.shipping_name or '—',
+        'shipping_address': order.shipping_address or '—',
+        'shipping_city': order.shipping_city or '—',
+        'shipping_phone': order.shipping_phone or '—',
+        'notes': order.notes or '—',
+        'total': str(order.total),
+        'items': items,
+        'messages': msgs,
+        'user_email': order.user.email,
+    }
+
+
+@login_required
+def order_detail_json_view(request, order_id):
+    """Devuelve detalles del pedido en JSON (para modal Ver mi pedido)."""
+    order = get_object_or_404(Order, pk=order_id, user=request.user)
+    return JsonResponse(_order_detail_data(order))
+
+
+@login_required
+def order_messages_json_view(request, order_id):
+    """Devuelve mensajes del pedido y marca como leídos."""
+    from django.utils import timezone
+    order = get_object_or_404(Order, pk=order_id, user=request.user)
+    msgs = list(order.messages.all().order_by('created_at'))
+    msgs_list = []
+    for m in msgs:
+        d = {
+            'id': m.id,
+            'message': m.message,
+            'is_from_admin': m.is_from_admin,
+            'created_at': m.created_at.strftime('%d/%m/%Y %H:%M'),
+            'read': m.read_at is not None,
+        }
+        if m.image:
+            d['image_url'] = m.image.url
+        else:
+            d['image_url'] = None
+        msgs_list.append(d)
+    order.messages.filter(is_from_admin=True, read_at__isnull=True).update(read_at=timezone.now())
+    return JsonResponse({'messages': msgs_list})
+
+
+@login_required
+@user_passes_test(_staff_required, login_url='/accounts/login/')
+def admin_order_detail_json_view(request, order_id):
+    """Admin: devuelve detalles de cualquier pedido. ?mark_client_read=1 marca mensajes del cliente como leídos."""
+    order = get_object_or_404(Order, pk=order_id)
+    if request.GET.get('mark_client_read'):
+        order.messages.filter(is_from_admin=False, read_by_admin_at__isnull=True).update(read_by_admin_at=timezone.now())
+    data = _order_detail_data(order)
+    return JsonResponse(data)
+
+
+@login_required
+@user_passes_test(_staff_required, login_url='/accounts/login/')
+def admin_send_message_view(request):
+    """Admin envía mensaje al cliente. POST order_id, message."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    order_id = request.POST.get('order_id')
+    message = (request.POST.get('message') or '').strip()
+    if not order_id or not message:
+        return JsonResponse({'error': 'order_id y message requeridos'}, status=400)
+    order = get_object_or_404(Order, pk=order_id)
+    OrderMessage.objects.create(order=order, sender=request.user, message=message, is_from_admin=True)
+    return JsonResponse({'ok': True})
+
+
+@login_required
+def client_send_message_view(request, order_id):
+    """Cliente responde en el chat del pedido. POST message (opcional), image (opcional). order_id viene de la URL."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    message = (request.POST.get('message') or '').strip()
+    image = request.FILES.get('image')
+    if not message and not image:
+        return JsonResponse({'error': 'Debes incluir un mensaje o una imagen (comprobante de pago)'}, status=400)
+    order = get_object_or_404(Order, pk=order_id, user=request.user)
+    # Validar imagen: solo PNG o JPG, máximo 10MB
+    if image:
+        allowed_types = ('image/png', 'image/jpeg', 'image/jpg')
+        if image.content_type not in allowed_types:
+            return JsonResponse({'error': 'Solo se permiten imágenes PNG o JPG.'}, status=400)
+        if image.size > 10 * 1024 * 1024:
+            return JsonResponse({'error': 'La imagen no debe superar 10 MB.'}, status=400)
+    msg_text = message or '(Comprobante de pago adjunto)'
+    msg = OrderMessage.objects.create(
+        order=order,
+        sender=request.user,
+        message=msg_text,
+        is_from_admin=False,
+        image=image,
+    )
+    data = {'ok': True, 'message_id': msg.id}
+    if msg.image:
+        data['image_url'] = msg.image.url
+    return JsonResponse(data)
+
+
+@login_required
+def unread_count_json_view(request):
+    """Devuelve conteo de mensajes no leídos para actualizar badges del header."""
+    data = {}
+    if request.user.is_staff:
+        count = OrderMessage.objects.filter(
+            is_from_admin=False,
+            read_by_admin_at__isnull=True
+        ).count()
+        data['admin_unread'] = count
+    else:
+        count = OrderMessage.objects.filter(
+            order__user=request.user,
+            is_from_admin=True,
+            read_at__isnull=True
+        ).count()
+        data['client_unread'] = count
+    return JsonResponse(data)

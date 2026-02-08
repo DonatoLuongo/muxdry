@@ -1,15 +1,25 @@
 from django.contrib import admin
+
+# Panel admin: solo superusuarios (Gestor BD). URL no obvia para mayor seguridad.
+_original_has_permission = admin.site.has_permission
+
+def _secure_admin_has_permission(request):
+    return _original_has_permission(request) and getattr(request.user, 'is_superuser', False)
+
+admin.site.has_permission = _secure_admin_has_permission
+
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import RedirectView
-from muxdry.views import health_check_view
+from muxdry.views import health_check_view, preview_404_view
 from products.views import home_view, information_view, contact_view
 from accounts.views import RegisterAPIView, LoginAPIView, ProfileAPIView, LogoutAPIView, SyncSessionAPIView
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('panel-interno-mux/', admin.site.urls),  # Admin Django: solo is_superuser
     path('health/', health_check_view),
+    path('404/', preview_404_view),
     path('', home_view, name='home'),
     path('information/', information_view, name='information'),
     path('contacto/', contact_view, name='contact'),

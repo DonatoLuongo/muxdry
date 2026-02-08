@@ -9,3 +9,8 @@ def health_check_view(request):
 
 def custom_404_view(request, exception=None):
     return render(request, '404.html', status=404)
+
+
+def preview_404_view(request):
+    """Vista para previsualizar la página 404 durante desarrollo (DEBUG=True)."""
+    return render(request, '404.html', status=404)

@@ -7,59 +7,88 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Página no encontrada - 404 | MUXDRY</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{% static 'styles.css' %}">
-    <link rel="shortcut icon" href="{% static 'assets/Logoweb.svg' %}" type="image/x-icon">
+    <link rel="icon" href="{% static 'assets/favicon.svg' %}" type="image/svg+xml">
+    <link rel="icon" href="{% static 'assets/favicon-dark.svg' %}" type="image/svg+xml" media="(prefers-color-scheme: dark)">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .error-404 {
+        :root {
+            --mux-teal: #0A2B32;
+            --mux-teal-light: #0d3a42;
+            --mux-orange: #e67e22;
+            --mux-orange-hover: #d35400;
+            --mux-cream: #f8f6f3;
+            --mux-gray: #4a5568;
+            --mux-gray-light: #718096;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', 'Segoe UI', sans-serif;
             min-height: 100vh;
+            background: linear-gradient(160deg, var(--mux-teal) 0%, var(--mux-teal-light) 50%, #0f4c5c 100%);
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 2rem;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+            position: relative;
         }
 
-        .error-container {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 3rem;
-            border-radius: 20px;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            max-width: 500px;
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(230, 126, 34, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 40%);
+            pointer-events: none;
+        }
+
+        .error-404 {
+            max-width: 560px;
             width: 100%;
-            animation: fadeInUp 0.8s ease-out;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            animation: fadeInUp 0.7s ease-out;
         }
 
-        .error-icon {
-            font-size: 5rem;
-            color: #667eea;
-            margin-bottom: 1.5rem;
-            animation: bounce 2s infinite;
+        .error-code {
+            font-size: clamp(6rem, 18vw, 10rem);
+            font-weight: 700;
+            line-height: 1;
+            color: white;
+            text-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+            letter-spacing: -0.02em;
+        }
+
+        .error-code span {
+            color: var(--mux-orange);
         }
 
         .error-title {
-            font-size: 4rem;
-            font-weight: 800;
-            color: #333;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .error-subtitle {
             font-size: 1.5rem;
-            color: #666;
-            margin-bottom: 1.5rem;
-            font-weight: 300;
+            font-weight: 600;
+            margin-top: 1rem;
+            color: rgba(255, 255, 255, 0.95);
         }
 
         .error-message {
-            color: #777;
-            margin-bottom: 2.5rem;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.8);
             line-height: 1.6;
+            margin-top: 1rem;
+            margin-bottom: 2.5rem;
+            font-weight: 400;
         }
 
         .error-actions {
@@ -70,34 +99,38 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: var(--mux-orange);
             color: white;
-            padding: 12px 30px;
-            border-radius: 50px;
+            padding: 14px 32px;
+            border-radius: 8px;
             text-decoration: none;
             font-weight: 600;
-            transition: all 0.3s ease;
+            font-size: 1rem;
+            transition: all 0.25s ease;
             border: none;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
+            box-shadow: 0 4px 14px rgba(230, 126, 34, 0.4);
         }
 
         .btn-primary:hover {
+            background: var(--mux-orange-hover);
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 6px 20px rgba(230, 126, 34, 0.5);
         }
 
         .btn-secondary {
-            background: transparent;
-            color: #667eea;
-            padding: 12px 25px;
-            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 8px;
             text-decoration: none;
             font-weight: 600;
-            transition: all 0.3s ease;
-            border: 2px solid #667eea;
+            font-size: 1rem;
+            transition: all 0.25s ease;
+            border: 2px solid rgba(255, 255, 255, 0.4);
             cursor: pointer;
             display: inline-flex;
             align-items: center;
@@ -105,51 +138,79 @@
         }
 
         .btn-secondary:hover {
-            background: #667eea;
-            color: white;
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.6);
             transform: translateY(-2px);
         }
 
+        .search-wrapper {
+            margin-top: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .search-brand {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: white;
+            letter-spacing: 0.08em;
+        }
+
         .search-box {
-            margin-top: 2rem;
             position: relative;
+            flex: 1;
+            min-width: 260px;
+            max-width: 400px;
         }
 
         .search-input {
             width: 100%;
-            padding: 15px 20px;
-            border: 2px solid #e0e0e0;
-            border-radius: 50px;
+            padding: 16px 56px 16px 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
             font-size: 1rem;
             outline: none;
-            transition: border-color 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-family: inherit;
+            transition: border-color 0.25s ease;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
         }
 
         .search-input:focus {
-            border-color: #667eea;
+            border-color: var(--mux-orange);
+            background: rgba(255, 255, 255, 0.12);
         }
 
         .search-btn {
             position: absolute;
-            right: 5px;
-            top: 5px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--mux-orange);
             border: none;
-            border-radius: 50px;
-            padding: 10px 20px;
+            border-radius: 6px;
+            padding: 10px 18px;
             color: white;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.25s ease;
         }
 
         .search-btn:hover {
-            transform: scale(1.05);
+            background: var(--mux-orange-hover);
+            transform: translateY(-50%) scale(1.02);
         }
 
         @keyframes fadeInUp {
             from {
                 opacity: 0;
-                transform: translateY(50px);
+                transform: translateY(30px);
             }
             to {
                 opacity: 1;
@@ -157,39 +218,19 @@
             }
         }
 
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {
-                transform: translateY(0);
-            }
-            40% {
-                transform: translateY(-20px);
-            }
-            60% {
-                transform: translateY(-10px);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .error-container {
-                padding: 2rem;
-                margin: 1rem;
-            }
-            
-            .error-title {
-                font-size: 3rem;
-            }
-            
-            .error-subtitle {
-                font-size: 1.2rem;
-            }
-            
+        @media (max-width: 480px) {
             .error-actions {
                 flex-direction: column;
             }
-            
             .btn-primary, .btn-secondary {
                 width: 100%;
                 justify-content: center;
+            }
+            .search-wrapper {
+                flex-direction: column;
+            }
+            .search-box {
+                min-width: 100%;
             }
         }
     </style>
@@ -197,39 +238,35 @@
 
 <body>
     <div class="error-404">
-        <div class="error-container">
-            <div class="error-icon">
-                <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            
-            <h1 class="error-title">404</h1>
-            <h2 class="error-subtitle">¡Ups! Página no encontrada</h2>
-            
-            <p class="error-message">
-                La página que estás buscando parece haberse esfumado. 
-                Puede que haya sido movida, eliminada o que nunca haya existido.
-            </p>
+        <h1 class="error-code">4<span>0</span>4</h1>
+        <h2 class="error-title">Página no encontrada</h2>
+        
+        <p class="error-message">
+            La página que buscas no existe o fue movida. 
+            Regresa al inicio o busca lo que necesitas.
+        </p>
 
-            <div class="error-actions">
-                <a href="{% url 'home' %}" class="btn-primary">
-                    <i class="fas fa-home"></i>
-                    Volver al Inicio
-                </a>
-                <a href="{% url 'information' %}" class="btn-secondary">
-                    <i class="fas fa-question-circle"></i>
-                    Ayuda
-                </a>
-            </div>
+        <div class="error-actions">
+            <a href="{% url 'home' %}" class="btn-primary">
+                <i class="fas fa-home"></i>
+                Volver al Inicio
+            </a>
+            <a href="{% url 'information' %}" class="btn-secondary">
+                <i class="fas fa-info-circle"></i>
+                Información
+            </a>
+        </div>
 
-            <form class="search-box" action="{% url 'products:search' %}" method="get" style="margin-top:2rem;">
-                <input type="text" name="q" class="search-input" placeholder="¿Qué estás buscando?">
+        <div class="search-wrapper">
+            <span class="search-brand">MUX</span>
+            <form class="search-box" action="{% url 'products:search' %}" method="get">
+                <input type="text" name="q" class="search-input" placeholder="Buscar productos...">
                 <button type="submit" class="search-btn">
                     <i class="fas fa-search"></i>
                 </button>
             </form>
         </div>
     </div>
-
 </body>
 
 </html>

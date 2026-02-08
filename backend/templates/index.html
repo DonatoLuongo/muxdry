@@ -36,7 +36,7 @@
     <div class="product-grid">
         {% for product in products %}
         <div class="product-card">
-            {% if product.is_featured %}<div class="product-badge">Destacado</div>{% elif product.is_on_sale %}<div class="product-badge">Oferta</div>{% else %}<div class="product-badge">Nuevo</div>{% endif %}
+            {% if product.is_featured %}<div class="product-badge">Destacado</div>{% elif product.is_new %}<div class="product-badge">Nuevo</div>{% elif product.is_on_sale %}<div class="product-badge">Oferta</div>{% endif %}
             <div class="product-image">
                 <img src="{% product_image_url product %}" alt="{{ product.name }}" class="product-main-img">
                 <img src="{% product_hover_image_url product %}" alt="{{ product.name }}" class="product-hover-img">
@@ -55,13 +55,15 @@
             </div>
             <div class="product-info">
                 <h3 class="product-title">{{ product.name }}</h3>
-                <div class="product-rating">
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <span>({{ product.sales_count|default:0 }})</span>
+                <div class="product-rating" title="{{ product.avg_rating|default:0 }} estrellas · {{ product.review_count|default:0 }} reseñas · {{ product.sales_count|default:0 }} vendidos">
+                    {% with avg=product.avg_rating|default:0 %}
+                    {% for i in "12345" %}
+                    {% if forloop.counter <= avg %}<i class="fas fa-star"></i>
+                    {% elif forloop.counter|add:"-1" < avg %}<i class="fas fa-star-half-alt"></i>
+                    {% else %}<i class="far fa-star"></i>{% endif %}
+                    {% endfor %}
+                    {% endwith %}
+                    <span>({{ product.sales_count|default:0 }} vendidos)</span>
                 </div>
                 <div class="product-price">
                     <span class="current-price">${{ product.price }}</span>

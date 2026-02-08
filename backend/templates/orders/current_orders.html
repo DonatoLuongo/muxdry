@@ -49,7 +49,7 @@
         </div>
 
         <div class="current-orders-list">
-            {% for pedido in pedidos %}
+            {% for pedido, unread_count in pedidos_with_unread %}
             <div class="profile-order-card__custom-ui-2 current-order-card">
                 <div class="order-header__custom-ui-2">
                     <span class="order-id__custom-ui-2">#{{ pedido.order_number }}</span>
@@ -77,6 +77,13 @@
                         </div>
                     </div>
                 </div>
+                <div class="order-action-btns">
+                    <button type="button" class="order-detail-btn" data-order-id="{{ pedido.id }}"><i class="fas fa-eye"></i> Ver mi pedido</button>
+                    <button type="button" class="order-messages-btn" data-order-id="{{ pedido.id }}" data-order-number="{{ pedido.order_number }}">
+                        <i class="fas fa-comment-alt"></i> Mensajes
+                        {% if unread_count %}<span class="order-unread-badge" title="Tiene un nuevo mensaje por leer">{{ unread_count }}</span>{% endif %}
+                    </button>
+                </div>
                 {% if pedido.status == 'pending' or pedido.status == 'confirmed' %}
                 <form method="post" action="{% url 'orders:cancel_order' %}" class="order-cancel-form" onsubmit="return confirm('¿Cancelar este pedido? Se notificará al administrador.');">
                     {% csrf_token %}
@@ -97,24 +104,66 @@
         </div>
 
         {% if page_obj.paginator.num_pages > 1 %}
-        <div class="current-orders-pagination">
+        <nav class="orders-pagination-nav">
             {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}{% if filtro_period %}&period={{ filtro_period }}{% endif %}{% if filtro_date %}&date={{ filtro_date }}{% endif %}{% if filtro_q %}&q={{ filtro_q }}{% endif %}">&laquo; Anterior</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if filtro_period %}&period={{ filtro_period }}{% endif %}{% if filtro_date %}&date={{ filtro_date }}{% endif %}{% if filtro_q %}&q={{ filtro_q }}{% endif %}" class="pagination-btn">Página anterior</a>
+            {% else %}
+            <span class="pagination-btn pagination-btn--disabled">Página anterior</span>
             {% endif %}
             {% for n in page_obj.paginator.page_range %}
             {% if page_obj.number == n %}
-            <span class="current">{{ n }}</span>
+            <span class="pagination-btn pagination-btn--active">{{ n }}</span>
             {% else %}
-            <a href="?page={{ n }}{% if filtro_period %}&period={{ filtro_period }}{% endif %}{% if filtro_date %}&date={{ filtro_date }}{% endif %}{% if filtro_q %}&q={{ filtro_q }}{% endif %}">{{ n }}</a>
+            <a href="?page={{ n }}{% if filtro_period %}&period={{ filtro_period }}{% endif %}{% if filtro_date %}&date={{ filtro_date }}{% endif %}{% if filtro_q %}&q={{ filtro_q }}{% endif %}" class="pagination-btn">{{ n }}</a>
             {% endif %}
             {% endfor %}
             {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}{% if filtro_period %}&period={{ filtro_period }}{% endif %}{% if filtro_date %}&date={{ filtro_date }}{% endif %}{% if filtro_q %}&q={{ filtro_q }}{% endif %}">Siguiente &raquo;</a>
+            <a href="?page={{ page_obj.next_page_number }}{% if filtro_period %}&period={{ filtro_period }}{% endif %}{% if filtro_date %}&date={{ filtro_date }}{% endif %}{% if filtro_q %}&q={{ filtro_q }}{% endif %}" class="pagination-btn">Página siguiente</a>
+            {% else %}
+            <span class="pagination-btn pagination-btn--disabled">Página siguiente</span>
             {% endif %}
-        </div>
+        </nav>
         {% endif %}
     </div>
 </section>
+
+<!-- Modal Ver mi pedido -->
+<div id="order-detail-modal" class="order-modal-overlay">
+    <div class="order-modal-content">
+        <button type="button" class="order-modal-close" id="close-detail-modal">&times;</button>
+        <h2 class="order-modal-title"><i class="fas fa-file-alt"></i> Detalles del pedido <span id="detail-order-id"></span></h2>
+        <div id="order-detail-body"></div>
+    </div>
+</div>
+
+<!-- Modal Mensajes -->
+<div id="order-messages-modal" class="order-modal-overlay">
+    <div class="order-modal-content order-modal-content--chat">
+        <button type="button" class="order-modal-close" id="close-messages-modal">&times;</button>
+        <h2 class="order-modal-title"><i class="fas fa-comments"></i> Mensajes - Pedido <span id="messages-order-id"></span></h2>
+        <div class="order-chat-messages" id="order-chat-messages"></div>
+        <div class="order-chat-reply" id="order-chat-reply">
+            <div id="reply-wait-notice" class="reply-wait-notice" style="display:none;">
+                <i class="fas fa-info-circle"></i> Espera a que el administrador se ponga en contacto contigo. Podrás responder cuando recibas el primer mensaje.
+            </div>
+            <div id="reply-form-wrap" style="display:none;">
+                <label><span>Responder o enviar comprobante de pago</span></label>
+                <textarea id="reply-message-input" placeholder="Escribe tu mensaje o descripción del comprobante..."></textarea>
+                <div class="reply-row">
+                    <input type="file" id="reply-image-input" accept="image/png,image/jpeg,image/jpg" title="Adjuntar comprobante (PNG o JPG, máx. 10MB)">
+                    <button type="button" class="reply-btn" id="reply-send-btn"><i class="fas fa-paper-plane"></i> Enviar</button>
+                </div>
+                <p class="reply-hint"><i class="fas fa-exclamation-circle"></i> Solo PNG o JPG. Máximo 10 MB. El administrador revisará tu comprobante.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lightbox para ampliar imágenes -->
+<div id="order-image-lightbox" class="order-lightbox">
+    <button type="button" class="order-lightbox-close" id="close-lightbox">&times;</button>
+    <img id="lightbox-img" src="" alt="Comprobante">
+</div>
 {% endblock %}
 
 {% block extra_css %}
@@ -157,9 +206,212 @@
 .order-cancel-btn { padding: 8px 14px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 6px; font-size: 0.9rem; cursor: pointer; }
 .order-cancel-btn:hover { background: #dc3545; color: #fff; }
 .current-orders-empty { padding: 3rem 2rem; background: #fff; border-radius: 12px; text-align: center; }
-.current-orders-pagination { display: flex; justify-content: center; gap: 8px; margin-top: 1.5rem; }
-.current-orders-pagination a, .current-orders-pagination span { padding: 8px 14px; border-radius: 6px; text-decoration: none; color: #0A2B32; font-weight: 500; border: 1px solid #ddd; background: #fff; }
-.current-orders-pagination a:hover { background: #f0f0f0; }
-.current-orders-pagination .current { background: #0A2B32; color: #fff; border-color: #0A2B32; }
+.orders-pagination-nav, .current-orders-pagination { display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap; }
+.orders-pagination-nav .pagination-btn, .current-orders-pagination .pagination-btn { padding: 8px 14px; border: 1px solid #ddd; border-radius: 6px; background: #fff; color: #333; text-decoration: none; font-size: 0.9rem; }
+.orders-pagination-nav .pagination-btn:hover { background: #f0f0f0; }
+.orders-pagination-nav .pagination-btn--active { background: #0A2B32 !important; color: #fff !important; border-color: #0A2B32 !important; }
+.orders-pagination-nav .pagination-btn--disabled { opacity: 0.6; cursor: not-allowed; }
+.order-action-btns { display: flex; gap: 0.75rem; margin: 0 1.5rem 1rem; flex-wrap: wrap; }
+.order-detail-btn, .order-messages-btn {
+    padding: 8px 14px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; border: 1px solid #0A2B32;
+    background: #fff; color: #0A2B32; display: inline-flex; align-items: center; gap: 6px;
+}
+.order-detail-btn:hover, .order-messages-btn:hover { background: #0A2B32; color: #fff; }
+.order-unread-badge {
+    background: #e67e22; color: #fff; font-size: 0.75rem; padding: 2px 6px; border-radius: 10px; margin-left: 4px;
+}
+.order-modal-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;
+    padding: 1rem; overflow-y: auto;
+}
+.order-modal-overlay.is-open { display: flex; }
+.order-modal-content { background: #fff; border-radius: 12px; max-width: 720px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 1.5rem; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+.order-modal-content--chat { max-width: 720px; }
+.order-modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; }
+.order-chat-messages { max-height: 320px; overflow-y: auto; padding: 1rem 0; }
+.order-chat-msg { padding: 10px 12px; margin-bottom: 8px; border-radius: 8px; font-size: 0.95rem; }
+.order-chat-msg.admin { background: #e8f4fd; border-left: 4px solid #0A2B32; }
+.order-chat-msg.user { background: #f0f0f0; margin-left: 2rem; }
+.order-chat-msg-time { font-size: 0.75rem; color: #888; margin-top: 4px; }
+.order-chat-msg-img { max-width: 180px; max-height: 120px; cursor: pointer; border-radius: 6px; margin-top: 6px; border: 1px solid #ddd; }
+.order-chat-msg-img:hover { opacity: 0.9; }
+.order-chat-reply { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee; }
+.order-chat-reply textarea { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; min-height: 60px; resize: vertical; font-family: inherit; }
+.order-chat-reply .reply-row { display: flex; gap: 0.75rem; margin-top: 8px; align-items: center; flex-wrap: wrap; }
+.order-chat-reply .reply-row input[type="file"] { font-size: 0.9rem; }
+.order-chat-reply .reply-btn { padding: 8px 16px; background: #0A2B32; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+.order-chat-reply .reply-btn:hover { background: #0d3840; }
+.order-chat-reply .reply-hint { font-size: 0.8rem; color: #6c757d; margin-top: 4px; }
+.reply-wait-notice { background: #fff3cd; border: 1px solid #ffc107; color: #856404; padding: 10px 12px; border-radius: 8px; font-size: 0.9rem; }
+.reply-wait-notice i { margin-right: 6px; }
+/* Lightbox */
+.order-lightbox { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10000; align-items: center; justify-content: center; padding: 2rem; }
+.order-lightbox.is-open { display: flex; }
+.order-lightbox img { max-width: 95%; max-height: 95%; object-fit: contain; border-radius: 8px; }
+.order-lightbox-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: #fff; font-size: 2rem; cursor: pointer; }
+#order-detail-body .detail-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; font-size: 0.95rem; }
+#order-detail-body .detail-row strong { color: #0A2B32; }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var detailModal = document.getElementById('order-detail-modal');
+    var messagesModal = document.getElementById('order-messages-modal');
+    var detailBody = document.getElementById('order-detail-body');
+    var messagesContainer = document.getElementById('order-chat-messages');
+    var lightbox = document.getElementById('order-image-lightbox');
+    var lightboxImg = document.getElementById('lightbox-img');
+    var currentMessagesOrderId = null;
+    var baseUrl = '{{ request.scheme }}://{{ request.get_host }}';
+
+    function getCsrf() {
+        var el = document.querySelector('[name=csrfmiddlewaretoken]');
+        return el ? el.value : (document.cookie.match(/csrftoken=([^;]+)/) || [,''])[1];
+    }
+
+    function renderMsgImg(url) {
+        if (!url) return '';
+        var full = url.startsWith('http') ? url : baseUrl + url;
+        return '<img src="' + full + '" class="order-chat-msg-img" alt="Comprobante" data-full="' + full + '">';
+    }
+
+    function openDetailModal(orderId) {
+        fetch('/orders/pedido/' + orderId + '/detalle/')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                document.getElementById('detail-order-id').textContent = '#' + d.order_number;
+                var html = '<div class="detail-row"><strong>Fecha</strong><span>' + d.created_at + '</span></div>';
+                html += '<div class="detail-row"><strong>Estado</strong><span>' + d.status + '</span></div>';
+                html += '<div class="detail-row"><strong>Método de pago</strong><span>' + d.payment_method + '</span></div>';
+                html += '<div class="detail-row"><strong>Cédula/RIF</strong><span>' + d.document + '</span></div>';
+                html += '<div class="detail-row"><strong>Tipo envío</strong><span>' + d.shipping_type + '</span></div>';
+                html += '<div class="detail-row"><strong>Agencia</strong><span>' + d.shipping_agency + '</span></div>';
+                html += '<div class="detail-row"><strong>Retiro oficina</strong><span>' + (d.office_pickup ? 'Sí' : 'No') + '</span></div>';
+                html += '<div class="detail-row"><strong>Dirección</strong><span>' + d.shipping_address + '</span></div>';
+                html += '<div class="detail-row"><strong>Ciudad</strong><span>' + d.shipping_city + '</span></div>';
+                html += '<div class="detail-row"><strong>Teléfono</strong><span>' + d.shipping_phone + '</span></div>';
+                html += '<div class="detail-row"><strong>Total</strong><span>$' + d.total + '</span></div>';
+                html += '<h4 style="margin-top:1rem;color:#0A2B32">Productos</h4>';
+                d.items.forEach(function(i) { html += '<div class="detail-row"><span>' + i.name + ' x ' + i.quantity + '</span><span>$' + i.total + '</span></div>'; });
+                if (d.notes !== '—') html += '<div class="detail-row"><strong>Notas</strong><span>' + d.notes + '</span></div>';
+                if (d.messages && d.messages.length) {
+                    html += '<h4 style="margin-top:1.25rem;color:#0A2B32">Mensajes</h4>';
+                    d.messages.forEach(function(m) {
+                        html += '<div class="order-chat-msg ' + (m.is_from_admin ? 'admin' : 'user') + '" style="margin-bottom:8px;">';
+                        html += '<div>' + m.message.replace(/\n/g, '<br>') + '</div>';
+                        if (m.image_url) html += renderMsgImg(m.image_url);
+                        html += '<div class="order-chat-msg-time">' + m.created_at + (m.is_from_admin ? ' - MUXDRY' : '') + '</div></div>';
+                    });
+                }
+                detailBody.innerHTML = html;
+                detailBody.querySelectorAll('.order-chat-msg-img').forEach(function(img) {
+                    img.addEventListener('click', function() { openLightbox(this.getAttribute('data-full')); });
+                });
+                detailModal.classList.add('is-open');
+            });
+    }
+
+    function openLightbox(src) {
+        if (lightboxImg && lightbox) { lightboxImg.src = src; lightbox.classList.add('is-open'); }
+    }
+    function closeLightbox() { if (lightbox) lightbox.classList.remove('is-open'); }
+
+    function openMessagesModal(orderId) {
+        var btn = event.target.closest('.order-messages-btn');
+        var num = btn && btn.getAttribute('data-order-number') ? btn.getAttribute('data-order-number') : orderId;
+        document.getElementById('messages-order-id').textContent = '#' + num;
+        currentMessagesOrderId = orderId;
+        document.getElementById('reply-message-input').value = '';
+        document.getElementById('reply-image-input').value = '';
+        fetch('/orders/pedido/' + orderId + '/mensajes/')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                var html = '';
+                var hasAdminMsg = false;
+                d.messages.forEach(function(m) {
+                    if (m.is_from_admin) hasAdminMsg = true;
+                    html += '<div class="order-chat-msg ' + (m.is_from_admin ? 'admin' : 'user') + '">';
+                    html += '<div>' + m.message.replace(/\n/g, '<br>') + '</div>';
+                    if (m.image_url) html += renderMsgImg(m.image_url);
+                    html += '<div class="order-chat-msg-time">' + m.created_at + (m.is_from_admin ? ' - MUXDRY' : '') + '</div></div>';
+                });
+                messagesContainer.innerHTML = html || '<p style="color:#888">No hay mensajes aún.</p>';
+                messagesContainer.querySelectorAll('.order-chat-msg-img').forEach(function(img) {
+                    img.addEventListener('click', function() { openLightbox(this.getAttribute('data-full')); });
+                });
+                document.getElementById('reply-wait-notice').style.display = hasAdminMsg ? 'none' : 'block';
+                document.getElementById('reply-form-wrap').style.display = hasAdminMsg ? 'block' : 'none';
+                messagesModal.classList.add('is-open');
+                if (d.messages.length) messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                var badge = btn && btn.querySelector('.order-unread-badge');
+                if (badge) badge.remove();
+                if (typeof window.refreshOrdersUnreadBadges === 'function') window.refreshOrdersUnreadBadges();
+            });
+    }
+
+    function sendReply() {
+        if (!currentMessagesOrderId) return;
+        var msgInput = document.getElementById('reply-message-input');
+        var imgInput = document.getElementById('reply-image-input');
+        var msg = (msgInput.value || '').trim();
+        var file = imgInput.files && imgInput.files[0];
+        if (!msg && !file) { alert('Escribe un mensaje o adjunta una imagen.'); return; }
+        if (file) {
+            var allowed = ['image/png', 'image/jpeg', 'image/jpg'];
+            if (allowed.indexOf(file.type) === -1) { alert('Solo se permiten imágenes PNG o JPG.'); return; }
+            if (file.size > 10 * 1024 * 1024) { alert('La imagen no debe superar 10 MB.'); return; }
+        }
+        var fd = new FormData();
+        fd.append('message', msg || '(Comprobante de pago adjunto)');
+        fd.append('csrfmiddlewaretoken', getCsrf());
+        if (file) fd.append('image', file);
+        var btn = document.getElementById('reply-send-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+        fetch('/orders/pedido/' + currentMessagesOrderId + '/responder/', { method: 'POST', body: fd })
+            .then(function(r) { return r.json(); })
+            .then(function(res) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar';
+                if (res.error) { alert(res.error); return; }
+                msgInput.value = ''; imgInput.value = '';
+                fetch('/orders/pedido/' + currentMessagesOrderId + '/mensajes/')
+                    .then(function(r2) { return r2.json(); })
+                    .then(function(d) {
+                        var html = '';
+                        d.messages.forEach(function(m) {
+                            html += '<div class="order-chat-msg ' + (m.is_from_admin ? 'admin' : 'user') + '">';
+                            html += '<div>' + m.message.replace(/\n/g, '<br>') + '</div>';
+                            if (m.image_url) html += renderMsgImg(m.image_url);
+                            html += '<div class="order-chat-msg-time">' + m.created_at + (m.is_from_admin ? ' - MUXDRY' : '') + '</div></div>';
+                        });
+                        messagesContainer.innerHTML = html || '<p style="color:#888">No hay mensajes aún.</p>';
+                        messagesContainer.querySelectorAll('.order-chat-msg-img').forEach(function(img) {
+                            img.addEventListener('click', function() { openLightbox(img.getAttribute('data-full')); });
+                        });
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    });
+            })
+            .catch(function() { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar'; alert('Error al enviar.'); });
+    }
+
+    function closeModal(m) { m.classList.remove('is-open'); }
+    document.querySelectorAll('.order-detail-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() { openDetailModal(this.getAttribute('data-order-id')); });
+    });
+    document.querySelectorAll('.order-messages-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() { openMessagesModal(this.getAttribute('data-order-id')); });
+    });
+    if (document.getElementById('close-detail-modal')) document.getElementById('close-detail-modal').onclick = function() { closeModal(detailModal); };
+    if (document.getElementById('close-messages-modal')) document.getElementById('close-messages-modal').onclick = function() { closeModal(messagesModal); };
+    if (document.getElementById('close-lightbox')) document.getElementById('close-lightbox').onclick = closeLightbox;
+    if (lightbox) lightbox.addEventListener('click', function(e) { if (e.target === lightbox) closeLightbox(); });
+    if (detailModal) detailModal.addEventListener('click', function(e) { if (e.target === detailModal) closeModal(detailModal); });
+    if (messagesModal) messagesModal.addEventListener('click', function(e) { if (e.target === messagesModal) closeModal(messagesModal); });
+    if (document.getElementById('reply-send-btn')) document.getElementById('reply-send-btn').addEventListener('click', sendReply);
+})();
+</script>
 {% endblock %}

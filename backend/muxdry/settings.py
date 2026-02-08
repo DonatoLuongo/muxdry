@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'products',
     'orders',
     'reviews',
+    'encrypted_fields',
 ]
 
 MIDDLEWARE = [
@@ -57,6 +58,9 @@ TEMPLATES = [
                 'products.context_processors.categories',
                 'orders.context_processors.cart',
                 'orders.context_processors.orders_count',
+                'orders.context_processors.unread_messages_count',
+                'orders.context_processors.admin_unread_client_count',
+                'orders.context_processors.admin_orders_count',
             ],
         },
     },
@@ -125,3 +129,45 @@ EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+# Si no hay credenciales, usar consola (desarrollo)
+if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+# Encriptación de mensajes del chat (OrderMessage) - django-fernet-encrypted-fields
+SALT_KEY = config('SALT_KEY', default='muxdry-salt-32chars-exactly!!!')
+
+# Contraseñas: Argon2 (más seguro que PBKDF2)
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+]
+
+# Validación de contraseñas (login, registro, cambio)
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', 'OPTIONS': {'min_length': 8}},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
+
+# Cache (para django-ratelimit)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'muxdry-ratelimit',
+    }
+}
+
+# Seguridad en producción (cuando DEBUG=False)
+if not DEBUG:
+    SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=True, cast=bool)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True

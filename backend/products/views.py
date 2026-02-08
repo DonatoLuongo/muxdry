@@ -55,7 +55,11 @@ def contact_view(request):
 
 
 def home_view(request):
-    products = Product.objects.all().order_by('-is_featured', '-created_at')
+    from django.db.models import Avg, Count, Q
+    products = Product.objects.annotate(
+        avg_rating=Avg('reviews__rating', filter=Q(reviews__approved=True)),
+        review_count=Count('reviews', filter=Q(reviews__approved=True))
+    ).order_by('-is_featured', '-created_at')
     # Productos para carrusel "Más demandado": destacados o los de más ventas (hasta 4 slides)
     viral_products = list(Product.objects.filter(is_featured=True)[:4])
     if not viral_products:
@@ -80,6 +84,7 @@ def home_view(request):
 
 def product_detail_view(request, slug):
     """Detalle de producto por slug (template genérico) con reseñas paginadas."""
+    from django.db.models import Avg, Count
     from reviews.models import Review
     product = get_object_or_404(Product, slug=slug)
     reviews_qs = Review.objects.filter(product=product, approved=True).select_related('user').order_by('-created_at')
@@ -89,19 +94,28 @@ def product_detail_view(request, slug):
     user_has_reviewed = False
     if request.user.is_authenticated:
         user_has_reviewed = Review.objects.filter(product=product, user=request.user).exists()
+    agg = reviews_qs.aggregate(avg=Avg('rating'), cnt=Count('id'))
+    average_rating = round(float(agg['avg'] or 0), 1)
+    review_count = agg['cnt'] or 0
     context = {
         'product': product,
         'reviews_page': page_obj,
         'user_can_review': request.user.is_authenticated and not user_has_reviewed,
         'user_has_reviewed': user_has_reviewed,
+        'average_rating': average_rating,
+        'review_count': review_count,
     }
     return render(request, 'products/detail.html', context)
 
 
 def category_view(request, slug):
     """Lista productos por categoría."""
+    from django.db.models import Avg, Count, Q
     category = get_object_or_404(Category, slug=slug)
-    products = Product.objects.filter(category=category)
+    products = Product.objects.filter(category=category).annotate(
+        avg_rating=Avg('reviews__rating', filter=Q(reviews__approved=True)),
+        review_count=Count('reviews', filter=Q(reviews__approved=True))
+    )
     return render(request, 'index.html', {
         'category': category,
         'products': products,
@@ -111,9 +125,13 @@ def category_view(request, slug):
 
 def search_view(request):
     """Búsqueda de productos."""
+    from django.db.models import Avg, Count, Q
     q = request.GET.get('q', '').strip()
     if q:
-        products = Product.objects.filter(name__icontains=q).order_by('-is_featured', '-created_at')
+        products = Product.objects.filter(name__icontains=q).annotate(
+            avg_rating=Avg('reviews__rating', filter=Q(reviews__approved=True)),
+            review_count=Count('reviews', filter=Q(reviews__approved=True))
+        ).order_by('-is_featured', '-created_at')
     else:
         products = Product.objects.none()
     return render(request, 'index.html', {

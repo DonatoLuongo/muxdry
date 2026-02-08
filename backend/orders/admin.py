@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils import timezone
-from .models import Order, OrderItem, Cart, CartItem
+from .models import Order, OrderItem, Cart, CartItem, OrderMessage
 
 
 class OrderItemInline(admin.TabularInline):
@@ -14,6 +14,13 @@ class OrderItemInline(admin.TabularInline):
     item_total_display.short_description = 'Total'
 
 
+class OrderMessageInline(admin.TabularInline):
+    model = OrderMessage
+    extra = 1
+    fields = ('message', 'is_from_admin', 'created_at')
+    readonly_fields = ('created_at',)
+
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
@@ -23,13 +30,17 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = ('status', 'payment_method', 'created_at')
     search_fields = ('order_number', 'user__email', 'user__username', 'shipping_email')
     readonly_fields = ('order_number', 'created_at', 'updated_at', 'paid_at', 'shipped_at', 'delivered_at')
-    inlines = [OrderItemInline]
+    inlines = [OrderItemInline, OrderMessageInline]
     fieldsets = (
         ('Información del Pedido', {
             'fields': ('order_number', 'user', 'status', 'total', 'payment_method', 'payment_status')
         }),
+        ('Datos del Cliente', {
+            'fields': ('document',)
+        }),
         ('Información de Envío', {
-            'fields': ('shipping_name', 'shipping_address', 'shipping_city', 
+            'fields': ('shipping_type', 'shipping_agency', 'office_pickup', 'central_address',
+                      'shipping_name', 'shipping_address', 'shipping_city', 
                       'shipping_phone', 'shipping_email')
         }),
         ('Fechas', {
@@ -87,6 +98,21 @@ class OrderAdmin(admin.ModelAdmin):
     def mark_as_cancelled(self, request, queryset):
         queryset.update(status='cancelled')
     mark_as_cancelled.short_description = 'Marcar como Cancelado'
+
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+        for obj in instances:
+            if isinstance(obj, OrderMessage) and not obj.sender_id:
+                obj.sender = request.user
+            obj.save()
+        formset.save_m2m()
+
+
+@admin.register(OrderMessage)
+class OrderMessageAdmin(admin.ModelAdmin):
+    list_display = ('order', 'sender', 'is_from_admin', 'created_at', 'read_at')
+    list_filter = ('is_from_admin',)
+    search_fields = ('order__order_number',)  # message está encriptado, no buscable
 
 
 @admin.register(Cart)

@@ -26,6 +26,7 @@ class Product(models.Model):
     image_hover = models.ImageField(upload_to='products/', blank=True, null=True)
     is_featured = models.BooleanField(default=False)
     is_best_seller = models.BooleanField(default=False)
+    is_new = models.BooleanField(default=False, verbose_name='Etiqueta Nuevo')
     sales_count = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

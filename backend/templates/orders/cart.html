@@ -52,10 +52,11 @@
 .cart-item-buy-single:hover { background: #0d3840; color: #fff; }
 .cart-item-remove { padding: 6px 12px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 6px; font-size: 0.8rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
 .cart-item-remove:hover { background: #dc3545; color: #fff; }
-.cart-pagination { display: flex; justify-content: center; gap: 8px; margin-top: 1rem; padding: 1rem; }
-.cart-pagination a, .cart-pagination span { padding: 8px 14px; border-radius: 6px; text-decoration: none; color: #0A2B32; font-weight: 500; border: 1px solid #ddd; background: #fff; }
-.cart-pagination a:hover { background: #f0f0f0; }
-.cart-pagination .current { background: #0A2B32; color: #fff; border-color: #0A2B32; }
+.cart-pagination, .orders-pagination-nav { display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1rem; padding: 1rem; flex-wrap: wrap; }
+.cart-pagination .pagination-btn, .orders-pagination-nav .pagination-btn { padding: 8px 14px; border: 1px solid #ddd; border-radius: 6px; background: #fff; color: #333; text-decoration: none; font-size: 0.9rem; }
+.cart-pagination .pagination-btn:hover { background: #f0f0f0; }
+.cart-pagination .pagination-btn--active { background: #0A2B32 !important; color: #fff !important; border-color: #0A2B32 !important; }
+.cart-pagination .pagination-btn--disabled { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
 .cart-summary {
     background: #fff;
     border: 1px solid #e5e9ec;
@@ -104,6 +105,93 @@
     .cart-item-actions { grid-column: 2; margin-top: 8px; }
     .cart-summary { position: static; }
 }
+/* Modal formulario pedido */
+.order-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    overflow-y: auto;
+}
+.order-modal-overlay.is-open { display: flex; }
+.order-modal-content {
+    background: #fff;
+    border-radius: 12px;
+    max-width: 780px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 1.5rem 2rem;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+.order-modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    line-height: 1;
+}
+.order-modal-close:hover { color: #0A2B32; }
+.order-modal-title {
+    font-size: 1.25rem;
+    color: #0A2B32;
+    margin-bottom: 1.5rem;
+    padding-right: 2rem;
+}
+.order-modal-title i { margin-right: 0.5rem; color: #e67e22; }
+.order-modal-section {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #eee;
+}
+.order-modal-section:last-of-type { border-bottom: none; }
+.order-modal-section h3 {
+    font-size: 0.95rem;
+    color: #0A2B32;
+    margin-bottom: 0.75rem;
+}
+.order-form-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.order-form-row label { flex: 1; min-width: 140px; }
+.order-form-full { display: block; margin-bottom: 0.75rem; }
+.order-form-full span, .order-form-row label span { display: block; font-size: 0.85rem; color: #555; margin-bottom: 4px; }
+.order-form-full input, .order-form-full select, .order-form-full textarea,
+.order-form-row label input, .order-form-row label select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+.order-form-check { display: flex; align-items: center; gap: 8px; margin-bottom: 0.75rem; }
+.order-form-check input { width: auto; }
+.order-modal-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+}
+.order-modal-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+}
+.order-modal-btn--primary { background: #e67e22; color: #fff; }
+.order-modal-btn--primary:hover { background: #d35400; }
+.order-modal-btn--secondary { background: #f0f0f0; color: #333; }
+.order-modal-btn--secondary:hover { background: #e0e0e0; }
 </style>
 {% endblock %}
 
@@ -151,11 +239,7 @@
                 </div>
                 <div class="cart-item-total">${{ item.total_price }}</div>
                 <div class="cart-item-actions">
-                    <form method="post" action="{% url 'orders:create_order_single_item' %}" style="display:inline;">
-                        {% csrf_token %}
-                        <input type="hidden" name="item_id" value="{{ item.id }}">
-                        <button type="submit" class="cart-item-buy-single" title="Comprar solo este producto"><i class="fas fa-shopping-bag"></i> Comprar solo este producto</button>
-                    </form>
+                    <button type="button" class="cart-item-buy-single btn-open-order-modal-single" data-item-id="{{ item.id }}" title="Comprar solo este producto"><i class="fas fa-shopping-bag"></i> Comprar solo este producto</button>
                     <form method="post" action="{% url 'orders:remove_cart_item' %}" style="display:inline;">
                         {% csrf_token %}
                         <input type="hidden" name="item_id" value="{{ item.id }}">
@@ -167,21 +251,25 @@
         </div>
 
         {% if page_obj.paginator.num_pages > 1 %}
-        <div class="cart-pagination">
+        <nav class="orders-pagination-nav cart-pagination">
             {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}">&laquo; Anterior</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="pagination-btn">Página anterior</a>
+            {% else %}
+            <span class="pagination-btn pagination-btn--disabled">Página anterior</span>
             {% endif %}
             {% for n in page_obj.paginator.page_range %}
             {% if page_obj.number == n %}
-            <span class="current">{{ n }}</span>
+            <span class="pagination-btn pagination-btn--active">{{ n }}</span>
             {% else %}
-            <a href="?page={{ n }}">{{ n }}</a>
+            <a href="?page={{ n }}" class="pagination-btn">{{ n }}</a>
             {% endif %}
             {% endfor %}
             {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}">Siguiente &raquo;</a>
+            <a href="?page={{ page_obj.next_page_number }}" class="pagination-btn">Página siguiente</a>
+            {% else %}
+            <span class="pagination-btn pagination-btn--disabled">Página siguiente</span>
             {% endif %}
-        </div>
+        </nav>
         {% endif %}
         </div>
 
@@ -195,10 +283,7 @@
                 <span>Total</span>
                 <span>${{ total }}</span>
             </div>
-            <form method="post" action="{% url 'orders:create_order_from_cart' %}">
-                {% csrf_token %}
-                <button type="submit" class="cart-submit-btn">Realizar solicitud de pedido</button>
-            </form>
+            <button type="button" class="cart-submit-btn" id="btn-open-order-modal">Realizar solicitud de pedido</button>
             <a href="{% url 'home' %}" class="cart-continue-link">Seguir comprando</a>
         </div>
     </div>
@@ -210,4 +295,205 @@
     </div>
     {% endif %}
 </div>
+
+<!-- Modal: Formulario de solicitud de pedido -->
+<div id="order-request-modal" class="order-modal-overlay">
+    <div class="order-modal-content">
+        <button type="button" class="order-modal-close" id="btn-close-order-modal" aria-label="Cerrar">&times;</button>
+        <h2 class="order-modal-title"><i class="fas fa-clipboard-check"></i> Confirmar datos y enviar solicitud</h2>
+        <form method="post" action="{% url 'orders:create_order_from_cart' %}" id="order-request-form">
+            {% csrf_token %}
+            <input type="hidden" name="item_id" id="order-form-item-id" value="">
+            <div class="order-modal-section">
+                <h3>Datos de identificación</h3>
+                <div class="order-form-row">
+                    <label>
+                        <span>Nombre</span>
+                        <input type="text" name="first_name" value="{{ user.first_name|default:'' }}" required>
+                    </label>
+                    <label>
+                        <span>Apellido</span>
+                        <input type="text" name="last_name" value="{{ user.last_name|default:'' }}" required>
+                    </label>
+                    <label>
+                        <span>Cédula / RIF / Pasaporte</span>
+                        <input type="text" name="document" placeholder="Ej: V-12345678" required>
+                    </label>
+                </div>
+            </div>
+            <div class="order-modal-section">
+                <h3>Método de pago</h3>
+                <label class="order-form-full">
+                    <span>Selecciona</span>
+                    <select name="payment_method" required>
+                        <option value="transfer">Transferencia bancaria</option>
+                        <option value="binance">Binance</option>
+                        <option value="paypal">PayPal</option>
+                        <option value="zinli">Zinli</option>
+                        <option value="banesco">Banesco</option>
+                        <option value="pago_movil">Pago Móvil</option>
+                    </select>
+                </label>
+            </div>
+            <div class="order-modal-section">
+                <h3>Envío</h3>
+                <label class="order-form-full">
+                    <span>Tipo de envío</span>
+                    <select name="shipping_type" id="shipping-type-select">
+                        <option value="delivery_caracas">Delivery en Caracas</option>
+                        <option value="delivery_national">Envío a nivel nacional</option>
+                        <option value="office_pickup">Retiro en oficina</option>
+                    </select>
+                </label>
+                <div id="shipping-agency-wrap" class="order-form-row" style="display:none;">
+                    <label class="order-form-full">
+                        <span>Agencia de envío (preferencia)</span>
+                        <select name="shipping_agency" id="shipping-agency-select">
+                            <option value="">— Seleccionar —</option>
+                            <option value="mrw">MRW</option>
+                            <option value="domesa">DOMESA</option>
+                            <option value="zoom">ZOOM</option>
+                            <option value="tealca">TEALCA</option>
+                            <option value="dhl">DHL</option>
+                        </select>
+                    </label>
+                </div>
+                <p id="shipping-info-msg" class="order-form-info" style="display:none;font-size:0.8rem;color:#6c757d;margin-bottom:0.75rem;">
+                    <i class="fas fa-info-circle"></i> Verifica que la agencia elegida tenga cobertura en tu estado o ciudad.
+                    <a href="#" id="shipping-agency-maps-link" target="_blank" rel="noopener" style="color:#0A2B32;text-decoration:underline;">Ver ubicaciones en Google Maps</a>
+                </p>
+                <label class="order-form-check" id="office-pickup-wrap">
+                    <input type="checkbox" name="office_pickup" value="on" id="office-pickup-cb">
+                    <span>Deseo retirar en la oficina</span>
+                </label>
+                <div id="address-fields-wrap">
+                    <label class="order-form-full" id="central-address-wrap">
+                        <span>Dirección corta y céntrica (opcional)</span>
+                        <input type="text" name="central_address" placeholder="Ej: Centro Comercial X, local Y">
+                    </label>
+                    <label class="order-form-full" id="shipping-address-wrap">
+                        <span>Dirección de envío completa</span>
+                        <textarea name="shipping_address" rows="2" placeholder="Calle, edificio, apartamento, ciudad"></textarea>
+                    </label>
+                </div>
+                <div class="order-form-row">
+                    <label id="city-wrap">
+                        <span>Ciudad</span>
+                        <input type="text" name="shipping_city" placeholder="Caracas" id="shipping-city-input">
+                    </label>
+                    <label id="phone-wrap">
+                        <span>Teléfono</span>
+                        <input type="tel" name="shipping_phone" placeholder="+58 412 0000000">
+                    </label>
+                </div>
+            </div>
+            <div class="order-modal-section">
+                <label class="order-form-full">
+                    <span>Notas adicionales (opcional)</span>
+                    <textarea name="notes" rows="2" placeholder="Indicaciones especiales..."></textarea>
+                </label>
+            </div>
+            <div class="order-modal-actions">
+                <button type="button" class="order-modal-btn order-modal-btn--secondary" id="btn-cancel-order-modal">Cancelar</button>
+                <button type="submit" class="order-modal-btn order-modal-btn--primary"><i class="fas fa-paper-plane"></i> Enviar solicitud</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var modal = document.getElementById('order-request-modal');
+    var btnOpen = document.getElementById('btn-open-order-modal');
+    var btnClose = document.getElementById('btn-close-order-modal');
+    var btnCancel = document.getElementById('btn-cancel-order-modal');
+    var form = document.getElementById('order-request-form');
+    var hiddenItemId = document.getElementById('order-form-item-id');
+    var shippingType = document.getElementById('shipping-type-select');
+    var agencyWrap = document.getElementById('shipping-agency-wrap');
+    var infoMsg = document.getElementById('shipping-info-msg');
+    var officeCb = document.getElementById('office-pickup-cb');
+    var officeWrap = document.getElementById('office-pickup-wrap');
+    var addressWrap = document.getElementById('address-fields-wrap');
+    var cityWrap = document.getElementById('city-wrap');
+    var phoneWrap = document.getElementById('phone-wrap');
+    var centralAddressWrap = document.getElementById('central-address-wrap');
+    var shippingAddressWrap = document.getElementById('shipping-address-wrap');
+
+    function openModal(itemId) {
+        if (hiddenItemId) hiddenItemId.value = itemId || '';
+        if (itemId) form.action = '{% url "orders:create_order_single_item" %}';
+        else form.action = '{% url "orders:create_order_from_cart" %}';
+        applyShippingLogic();
+        if (modal) modal.classList.add('is-open');
+    }
+    function closeModal() { if (modal) modal.classList.remove('is-open'); }
+
+    if (btnOpen) btnOpen.addEventListener('click', function() { openModal(null); });
+    if (btnClose) btnClose.addEventListener('click', closeModal);
+    if (btnCancel) btnCancel.addEventListener('click', closeModal);
+    if (modal) modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
+
+    document.querySelectorAll('.btn-open-order-modal-single').forEach(function(btn) {
+        btn.addEventListener('click', function() { openModal(this.dataset.itemId || ''); });
+    });
+
+    function applyShippingLogic() {
+        var st = shippingType ? shippingType.value : '';
+        var isCaracas = st === 'delivery_caracas';
+        var isNational = st === 'delivery_national';
+        var isOffice = st === 'office_pickup';
+
+        if (agencyWrap) agencyWrap.style.display = isNational ? 'block' : 'none';
+        if (infoMsg) infoMsg.style.display = isNational ? 'block' : 'none';
+        var agencySelect = document.getElementById('shipping-agency-select');
+        var mapsLink = document.getElementById('shipping-agency-maps-link');
+        if (mapsLink && agencySelect) {
+            var agency = agencySelect.value || 'mrw';
+            var names = { mrw: 'MRW', domesa: 'DOMESA', zoom: 'ZOOM', tealca: 'TEALCA', dhl: 'DHL' };
+            var name = names[agency] || 'MRW';
+            mapsLink.href = 'https://www.google.com/maps/search/' + encodeURIComponent(name + ' Venezuela');
+        }
+
+        if (officeCb) {
+            officeCb.disabled = isCaracas || isNational;
+            if (isCaracas || isNational) officeCb.checked = false;
+        }
+
+        var disableAddress = isOffice;
+        [centralAddressWrap, shippingAddressWrap].forEach(function(el) {
+            if (el) {
+                var inp = el.querySelector('input, textarea');
+                if (inp) inp.disabled = disableAddress;
+                if (disableAddress) inp.value = '';
+            }
+        });
+        var addrInp = shippingAddressWrap ? shippingAddressWrap.querySelector('textarea') : null;
+        if (addrInp) addrInp.disabled = disableAddress;
+        if (disableAddress && addrInp) addrInp.value = '';
+
+        var cityInput = document.getElementById('shipping-city-input');
+        var phoneInput = phoneWrap ? phoneWrap.querySelector('input') : null;
+        if (cityInput) cityInput.required = !isOffice;
+        if (phoneInput) phoneInput.required = true;
+
+        var centralInp = centralAddressWrap ? centralAddressWrap.querySelector('input') : null;
+        var addrInp2 = shippingAddressWrap ? shippingAddressWrap.querySelector('textarea') : null;
+        if (isNational) {
+            if (addrInp2) addrInp2.required = true;
+        } else {
+            if (addrInp2) addrInp2.required = false;
+        }
+    }
+
+    if (shippingType) {
+        shippingType.addEventListener('change', applyShippingLogic);
+        applyShippingLogic();
+    }
+    var agencySelect = document.getElementById('shipping-agency-select');
+    if (agencySelect) agencySelect.addEventListener('change', applyShippingLogic);
+})();
+</script>
 {% endblock %}

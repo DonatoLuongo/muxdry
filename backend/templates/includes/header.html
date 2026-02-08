@@ -45,6 +45,9 @@
                         {% if user.is_authenticated %}
                         <a href="{% url 'profile' %}">Historial de compras</a>
                         <a href="{% url 'profile' %}?tab=settings">Configuración</a>
+                        {% if user.is_staff %}
+                        <a href="{% url 'orders:admin_orders' %}">Panel de solicitudes{% if admin_unread_client_count %} <span id="header-admin-unread-badge" class="admin-unread-badge" title="Respuestas de clientes por revisar" style="background:#e67e22;color:#fff;font-size:0.7rem;padding:1px 5px;border-radius:10px;margin-left:2px;">{{ admin_unread_client_count }}</span>{% endif %}{% if admin_orders_count %} <span class="admin-orders-badge" title="{{ admin_orders_count }} pedido(s) por atender" style="background:#22c55e;color:#fff;font-size:0.7rem;padding:1px 5px;border-radius:10px;margin-left:2px;">{{ admin_orders_count }}</span>{% endif %}</a>
+                        {% endif %}
                         {% else %}
                         <a href="{% url 'login' %}">Historial de compras</a>
                         <a href="{% url 'login' %}">Configuración</a>
@@ -68,6 +71,7 @@
             <div class="action-item orders">
                 <i class="fas fa-box-open"></i>
                 {% if user.is_authenticated %}<span class="orders-count">{% if orders_count %}{{ orders_count }}{% else %}0{% endif %}</span>{% endif %}
+                {% if unread_messages_count %}<span id="header-orders-unread-dot" class="orders-unread-dot" title="Tiene un nuevo mensaje por leer"></span>{% endif %}
                 <div class="action-text">
                     <a href="{% if user.is_authenticated %}{% url 'orders:current_orders' %}{% else %}{% url 'login' %}{% endif %}">
                         <span class="action-title">Mis Pedidos</span>
@@ -110,22 +114,35 @@
             </div>
 
             <div class="nav-promo">
-                <a href="#" class="promo-link">¡Envío gratis por compras sobre 55$!</a>
+                <span class="promo-link promo-link-animated">¡Envío gratis por compras sobre 55$!</span>
             </div>
         </div>
     </nav>
 </header>
 <script>
+window.refreshOrdersUnreadBadges = function() {
+    fetch('/orders/api/unread-count/')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            var dot = document.getElementById('header-orders-unread-dot');
+            var badge = document.getElementById('header-admin-unread-badge');
+            if (d.client_unread !== undefined) {
+                if (d.client_unread === 0 && dot) dot.remove();
+            }
+            if (d.admin_unread !== undefined) {
+                if (d.admin_unread === 0 && badge) badge.remove();
+                else if (d.admin_unread > 0 && badge) badge.textContent = d.admin_unread;
+            }
+        })
+        .catch(function() {});
+};
 (function() {
     var sel = document.getElementById('header-cat-select');
     if (sel) {
         sel.addEventListener('change', function() {
             var slug = this.value;
-            if (slug) {
-                window.location.href = '/products/categoria/' + slug + '/';
-            } else {
-                window.location.href = '/';
-            }
+            if (slug) window.location.href = '/products/categoria/' + slug + '/';
+            else window.location.href = '/';
         });
     }
     var toggle = document.getElementById('nav-toggle');

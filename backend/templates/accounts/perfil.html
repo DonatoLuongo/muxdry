@@ -9,6 +9,13 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="{% static 'styles.css' %}">
   <link rel="shortcut icon" href="{% static 'assets/Logoweb.svg' %}" type="image/x-icon">
+  <style>
+  .orders-pagination-nav { display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap; }
+  .pagination-btn { display: inline-flex; padding: 8px 14px; border: 1px solid #ddd; border-radius: 6px; background: #fff; color: #333; text-decoration: none; font-size: 0.9rem; }
+  .pagination-btn:hover { background: #f0f0f0; }
+  .pagination-btn--active { background: #0A2B32 !important; color: #fff !important; border-color: #0A2B32 !important; }
+  .pagination-btn--disabled { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+  </style>
 </head>
 
 <body>
@@ -26,6 +33,16 @@
         </div>
         <p>En línea <i class="fa-solid fa-circle" style="color: green;"></i></p>
       </div>
+
+      {% if messages %}
+      <div class="profile-messages" style="margin-bottom:1rem;">
+        {% for message in messages %}
+        <p class="profile-message profile-message--{{ message.tags }}" style="padding:0.75rem 1rem;border-radius:8px;margin:0.25rem 0;{% if message.tags == 'success' %}background:#d4edda;color:#155724;{% elif message.tags == 'error' %}background:#f8d7da;color:#721c24;{% else %}background:#e8f4fd;color:#0c5460;{% endif %}">
+          <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i> {{ message }}
+        </p>
+        {% endfor %}
+      </div>
+      {% endif %}
 
       <nav class="profile-nav__custom-ui-2">
         <ul class="profile-nav-list__custom-ui-2">
@@ -90,7 +107,7 @@
                   </div>
                 </div>
               </div>
-              <button class="order-details-btn__custom-ui-2" data-order="{{ pedido.order_number }}">Ver detalles</button>
+              <button class="order-details-btn__custom-ui-2" data-order-id="{{ pedido.id }}">Ver detalles de compra realizada</button>
             </div>
             {% empty %}
             <div class="no-orders-message">
@@ -100,24 +117,49 @@
             </div>
             {% endfor %}
           </div>
+          {% if page_obj_historial.paginator.num_pages > 1 %}
+          <nav class="orders-pagination-nav" style="margin-top:1.5rem;display:flex;justify-content:center;gap:0.5rem;flex-wrap:wrap;">
+            {% if page_obj_historial.has_previous %}
+            <a href="?tab=order-history&page={{ page_obj_historial.previous_page_number }}{% if historial_period %}&period={{ historial_period }}{% endif %}{% if historial_date %}&date={{ historial_date }}{% endif %}{% if historial_q %}&q={{ historial_q }}{% endif %}" class="pagination-btn">Página anterior</a>
+            {% else %}
+            <span class="pagination-btn pagination-btn--disabled">Página anterior</span>
+            {% endif %}
+            {% for n in page_obj_historial.paginator.page_range %}
+            {% if page_obj_historial.number == n %}
+            <span class="pagination-btn pagination-btn--active">{{ n }}</span>
+            {% else %}
+            <a href="?tab=order-history&page={{ n }}{% if historial_period %}&period={{ historial_period }}{% endif %}{% if historial_date %}&date={{ historial_date }}{% endif %}{% if historial_q %}&q={{ historial_q }}{% endif %}" class="pagination-btn">{{ n }}</a>
+            {% endif %}
+            {% endfor %}
+            {% if page_obj_historial.has_next %}
+            <a href="?tab=order-history&page={{ page_obj_historial.next_page_number }}{% if historial_period %}&period={{ historial_period }}{% endif %}{% if historial_date %}&date={{ historial_date }}{% endif %}{% if historial_q %}&q={{ historial_q }}{% endif %}" class="pagination-btn">Página siguiente</a>
+            {% else %}
+            <span class="pagination-btn pagination-btn--disabled">Página siguiente</span>
+            {% endif %}
+          </nav>
+          {% endif %}
         </div>
 
-        <!-- Configuración: diseño profesional -->
+        <!-- Configuración: 4 cuadros en 2x2 -->
         <div class="profile-tab__custom-ui-2 {% if request.GET.tab != 'settings' %}hidden{% endif %}" id="settings">
           <h2 class="profile-tab-title__custom-ui-2">Configuración de cuenta</h2>
-          <div class="profile-settings__custom-ui-2 profile-settings--pro">
-            {% if user.is_superuser %}
-            <section class="settings-card settings-card--pro settings-card--admin-grant" style="grid-column: 1 / -1;">
+          <div class="profile-settings__custom-ui-2 profile-settings--pro profile-settings-grid-2x2" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+            {% if user.is_staff %}
+            <section class="settings-card settings-card--pro settings-card--admin-grant">
               <div class="settings-card-header">
                 <span class="settings-card-icon"><i class="fas fa-user-shield"></i></span>
                 <h3 class="settings-card-title">Gestión de administradores</h3>
-                <p class="settings-card-desc">Concede acceso de administrador (panel de solicitudes y más) a un usuario por su correo. Solo superusuarios pueden ver esta sección.</p>
+                <p class="settings-card-desc">Concede acceso de Administrador (panel de solicitudes) a un usuario por su correo electrónico.</p>
               </div>
-              <form method="POST" action="{% url 'grant_staff' %}" class="settings-form settings-form--pro admin-grant-form">
+              <form method="POST" action="{% url 'grant_staff' %}" class="settings-form settings-form--pro admin-grant-form" id="adminGrantForm">
                 {% csrf_token %}
                 <div class="form-group__custom-ui-2 form-group--pro">
                   <label for="admin_email" class="form-label__custom-ui-2">Correo del usuario a promover</label>
                   <input type="email" id="admin_email" name="admin_email" class="form-input__custom-ui-2 form-input--pro" required placeholder="ejemplo@email.com">
+                </div>
+                <div class="form-group__custom-ui-2 form-group--pro">
+                  <label for="admin_email_confirm" class="form-label__custom-ui-2">Confirmar correo electrónico</label>
+                  <input type="email" id="admin_email_confirm" name="admin_email_confirm" class="form-input__custom-ui-2 form-input--pro" required placeholder="Repite el correo para confirmar">
                 </div>
                 <button type="submit" class="btn-settings-primary"><i class="fas fa-user-plus"></i> Conceder acceso de administrador</button>
               </form>
@@ -125,20 +167,103 @@
             {% endif %}
             <section class="settings-card settings-card--pro">
               <div class="settings-card-header">
-                <span class="settings-card-icon"><i class="fas fa-envelope"></i></span>
+                <span class="settings-card-icon"><i class="fas fa-user"></i></span>
                 <h3 class="settings-card-title">Datos de contacto</h3>
-                <p class="settings-card-desc">Actualiza tu correo y teléfono para notificaciones y soporte.</p>
+                <p class="settings-card-desc">Nombre, correo y teléfono (opcional) para notificaciones y soporte.</p>
               </div>
               <form class="settings-form settings-form--pro" id="editProfileForm" method="POST" action="{% url 'edit_profile' %}">
                 {% csrf_token %}
                 <div class="settings-form-row">
                   <div class="form-group__custom-ui-2 form-group--pro">
-                    <label for="email" class="form-label__custom-ui-2">Correo electrónico</label>
-                    <input type="email" id="email" name="email" class="form-input__custom-ui-2 form-input--pro" value="{{ user.email }}" placeholder="tu@email.com">
+                    <label class="form-label__custom-ui-2">Nombre</label>
+                    <div class="field-display-edit" data-field="first_name">
+                      {% if user.first_name %}
+                      <div class="field-display"><span class="field-value">{{ user.first_name }}</span><button type="button" class="btn-edit-field" title="Editar"><i class="fas fa-pencil-alt"></i></button></div>
+                      <input type="text" name="first_name" class="form-input__custom-ui-2 form-input--pro field-input" value="{{ user.first_name }}" placeholder="Tu nombre" style="display:none;">
+                      {% else %}
+                      <input type="text" name="first_name" class="form-input__custom-ui-2 form-input--pro" value="" placeholder="Tu nombre">
+                      {% endif %}
+                    </div>
                   </div>
                   <div class="form-group__custom-ui-2 form-group--pro">
-                    <label for="phone" class="form-label__custom-ui-2">Teléfono</label>
-                    <input type="text" id="phone" name="phone" class="form-input__custom-ui-2 form-input--pro" value="{% if user_profile %}{{ user_profile.phone }}{% endif %}" placeholder="+58 412 0000000">
+                    <label class="form-label__custom-ui-2">Apellido</label>
+                    <div class="field-display-edit" data-field="last_name">
+                      {% if user.last_name %}
+                      <div class="field-display"><span class="field-value">{{ user.last_name }}</span><button type="button" class="btn-edit-field" title="Editar"><i class="fas fa-pencil-alt"></i></button></div>
+                      <input type="text" name="last_name" class="form-input__custom-ui-2 form-input--pro field-input" value="{{ user.last_name }}" placeholder="Tu apellido" style="display:none;">
+                      {% else %}
+                      <input type="text" name="last_name" class="form-input__custom-ui-2 form-input--pro" value="" placeholder="Tu apellido">
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+                <div class="settings-form-row">
+                  <div class="form-group__custom-ui-2 form-group--pro">
+                    <label class="form-label__custom-ui-2">Correo electrónico</label>
+                    <div class="field-display-edit" data-field="email">
+                      {% if user.email %}
+                      <div class="field-display"><span class="field-value">{{ user.email }}</span><button type="button" class="btn-edit-field" title="Editar"><i class="fas fa-pencil-alt"></i></button></div>
+                      <input type="email" name="email" id="profile_email" class="form-input__custom-ui-2 form-input--pro field-input input-validate-email" value="{{ user.email }}" placeholder="tu@email.com" required style="display:none;">
+                      {% else %}
+                      <input type="email" name="email" id="profile_email" class="form-input__custom-ui-2 form-input--pro input-validate-email" value="" placeholder="tu@email.com" required>
+                      {% endif %}
+                    </div>
+                    <span class="field-hint field-hint-email" style="display:none;font-size:0.8rem;color:#6c757d;margin-top:0.25rem;"></span>
+                  </div>
+                  <div class="form-group__custom-ui-2 form-group--pro">
+                    <label class="form-label__custom-ui-2">Teléfono <span style="font-weight:normal;color:#888">(opcional)</span></label>
+                    <div class="field-display-edit" data-field="phone">
+                      {% if user_profile and user_profile.phone %}
+                      <div class="field-display"><span class="field-value">{{ user_profile.phone }}</span><button type="button" class="btn-edit-field" title="Editar"><i class="fas fa-pencil-alt"></i></button></div>
+                      <input type="text" name="phone" class="form-input__custom-ui-2 form-input--pro field-input" value="{{ user_profile.phone }}" placeholder="+58 412 0000000" style="display:none;">
+                      {% else %}
+                      <input type="text" name="phone" class="form-input__custom-ui-2 form-input--pro" value="" placeholder="+58 412 0000000">
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+                <button type="submit" class="btn-settings-primary"><i class="fas fa-save"></i> Guardar cambios</button>
+              </form>
+            </section>
+            <section class="settings-card settings-card--pro">
+              <div class="settings-card-header">
+                <span class="settings-card-icon"><i class="fas fa-map-marker-alt"></i></span>
+                <h3 class="settings-card-title">Datos de ubicación</h3>
+                <p class="settings-card-desc">Capital, ciudad y dirección corta para envíos y referencia.</p>
+              </div>
+              <form method="POST" action="{% url 'edit_location' %}" class="settings-form settings-form--pro">
+                {% csrf_token %}
+                <div class="form-group__custom-ui-2 form-group--pro">
+                  <label class="form-label__custom-ui-2">Capital</label>
+                  <div class="field-display-edit" data-field="capital">
+                    {% if user_profile and user_profile.capital %}
+                    <div class="field-display"><span class="field-value">{{ user_profile.capital }}</span><button type="button" class="btn-edit-field" title="Editar"><i class="fas fa-pencil-alt"></i></button></div>
+                    <input type="text" name="capital" class="form-input__custom-ui-2 form-input--pro field-input" value="{{ user_profile.capital }}" placeholder="Ej: Caracas" style="display:none;">
+                    {% else %}
+                    <input type="text" name="capital" class="form-input__custom-ui-2 form-input--pro" value="" placeholder="Ej: Caracas">
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="form-group__custom-ui-2 form-group--pro">
+                  <label class="form-label__custom-ui-2">Ciudad</label>
+                  <div class="field-display-edit" data-field="city">
+                    {% if user_profile and user_profile.city %}
+                    <div class="field-display"><span class="field-value">{{ user_profile.city }}</span><button type="button" class="btn-edit-field" title="Editar"><i class="fas fa-pencil-alt"></i></button></div>
+                    <input type="text" name="city" class="form-input__custom-ui-2 form-input--pro field-input" value="{{ user_profile.city }}" placeholder="Ej: Caracas" style="display:none;">
+                    {% else %}
+                    <input type="text" name="city" class="form-input__custom-ui-2 form-input--pro" value="" placeholder="Ej: Caracas">
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="form-group__custom-ui-2 form-group--pro">
+                  <label class="form-label__custom-ui-2">Dirección corta</label>
+                  <div class="field-display-edit" data-field="short_address">
+                    {% if user_profile and user_profile.short_address %}
+                    <div class="field-display"><span class="field-value">{{ user_profile.short_address }}</span><button type="button" class="btn-edit-field" title="Editar"><i class="fas fa-pencil-alt"></i></button></div>
+                    <input type="text" name="short_address" class="form-input__custom-ui-2 form-input--pro field-input" value="{{ user_profile.short_address }}" placeholder="Ej: Av. Principal, edificio X" style="display:none;">
+                    {% else %}
+                    <input type="text" name="short_address" class="form-input__custom-ui-2 form-input--pro" value="" placeholder="Ej: Av. Principal, edificio X">
+                    {% endif %}
                   </div>
                 </div>
                 <button type="submit" class="btn-settings-primary"><i class="fas fa-save"></i> Guardar cambios</button>
@@ -148,22 +273,38 @@
               <div class="settings-card-header">
                 <span class="settings-card-icon"><i class="fas fa-lock"></i></span>
                 <h3 class="settings-card-title">Seguridad</h3>
-                <p class="settings-card-desc">Cambia tu contraseña de acceso de forma segura.</p>
+                <p class="settings-card-desc">Cambia tu contraseña de acceso. Solo puedes cambiarla una vez cada 48 horas.</p>
+                {% if password_cooldown_hours %}
+                <p class="settings-card-warning" style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#fff3cd;color:#856404;border-radius:6px;font-size:0.9rem;">
+                  <i class="fas fa-clock"></i> Podrás cambiar la contraseña de nuevo en {{ password_cooldown_hours }} horas.
+                </p>
+                {% endif %}
               </div>
               <form method="POST" action="{% url 'change_password' %}" class="settings-form settings-form--pro">
                 {% csrf_token %}
                 <div class="form-group__custom-ui-2 form-group--pro">
                   <label for="current_password" class="form-label__custom-ui-2">Contraseña actual</label>
-                  <input type="password" id="current_password" name="current_password" class="form-input__custom-ui-2 form-input--pro" required placeholder="••••••••">
+                  <div class="password-input-wrapper" style="position:relative;">
+                    <input type="password" id="current_password" name="current_password" class="form-input__custom-ui-2 form-input--pro" required placeholder="••••••••">
+                    <button type="button" class="btn-toggle-password" title="Ver contraseña" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#666;"><i class="fas fa-eye"></i></button>
+                  </div>
                 </div>
                 <div class="settings-form-row">
                   <div class="form-group__custom-ui-2 form-group--pro">
                     <label for="new_password" class="form-label__custom-ui-2">Nueva contraseña</label>
-                    <input type="password" id="new_password" name="new_password" class="form-input__custom-ui-2 form-input--pro" required minlength="8" placeholder="Mínimo 8 caracteres">
+                    <div class="password-input-wrapper" style="position:relative;">
+                      <input type="password" id="new_password" name="new_password" class="form-input__custom-ui-2 form-input--pro input-validate-password" required minlength="8" placeholder="Mínimo 8 caracteres">
+                      <button type="button" class="btn-toggle-password" title="Ver contraseña" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#666;"><i class="fas fa-eye"></i></button>
+                    </div>
+                    <span class="field-hint field-hint-password" style="display:none;font-size:0.8rem;color:#6c757d;margin-top:0.25rem;"></span>
                   </div>
                   <div class="form-group__custom-ui-2 form-group--pro">
                     <label for="new_password_confirm" class="form-label__custom-ui-2">Confirmar contraseña</label>
-                    <input type="password" id="new_password_confirm" name="new_password_confirm" class="form-input__custom-ui-2 form-input--pro" required minlength="8" placeholder="Repite la nueva contraseña">
+                    <div class="password-input-wrapper" style="position:relative;">
+                      <input type="password" id="new_password_confirm" name="new_password_confirm" class="form-input__custom-ui-2 form-input--pro input-validate-password-confirm" required minlength="8" placeholder="Repite la contraseña">
+                      <button type="button" class="btn-toggle-password" title="Ver contraseña" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#666;"><i class="fas fa-eye"></i></button>
+                    </div>
+                    <span class="field-hint field-hint-password-confirm" style="display:none;font-size:0.8rem;color:#6c757d;margin-top:0.25rem;"></span>
                   </div>
                 </div>
                 <button type="submit" class="btn-settings-primary"><i class="fas fa-key"></i> Cambiar contraseña</button>
@@ -190,5 +331,188 @@
 
   <script src="{% static 'script.js' %}"></script>
   <script src="{% static 'perfil.js' %}"></script>
+  <script>
+  (function() {
+    // Field display/edit toggle (checklist + pencil)
+    document.querySelectorAll('.btn-edit-field').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var wrap = this.closest('.field-display-edit');
+        if (wrap) {
+          var display = wrap.querySelector('.field-display');
+          var input = wrap.querySelector('.field-input');
+          if (display && input) {
+            display.style.display = 'none';
+            input.style.display = 'block';
+            input.focus();
+          }
+        }
+      });
+    });
+    // Password show/hide (eye icon)
+    document.querySelectorAll('.btn-toggle-password').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var wrapper = this.closest('.password-input-wrapper');
+        var input = wrapper ? wrapper.querySelector('input') : null;
+        var icon = this.querySelector('i');
+        if (input && icon) {
+          var isPassword = input.type === 'password';
+          input.type = isPassword ? 'text' : 'password';
+          icon.className = isPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
+        }
+      });
+    });
+    // Admin grant: validar que correos coincidan
+    var grantForm = document.getElementById('adminGrantForm');
+    if (grantForm) {
+      grantForm.addEventListener('submit', function(e) {
+        var email = document.getElementById('admin_email').value.trim();
+        var confirm = document.getElementById('admin_email_confirm').value.trim();
+        if (email !== confirm) {
+          e.preventDefault();
+          alert('Los correos no coinciden. Verifica e intenta de nuevo.');
+          return false;
+        }
+      });
+    }
+    // Validación visual: email y contraseñas
+    var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    function validateEmail(v) {
+      if (!v || v.length === 0) return null;
+      return emailRegex.test(v) ? true : false;
+    }
+    function validatePassword(v) {
+      if (!v || v.length === 0) return null;
+      return v.length >= 8 ? true : false;
+    }
+    function applyState(input, ok, hintEl, msgOk, msgErr) {
+      input.classList.remove('form-input--valid', 'form-input--invalid');
+      if (ok === true) {
+        input.classList.add('form-input--valid');
+        if (hintEl) { hintEl.style.display = 'block'; hintEl.textContent = msgOk || ''; hintEl.className = 'field-hint field-hint--ok'; }
+      } else if (ok === false) {
+        input.classList.add('form-input--invalid');
+        if (hintEl) { hintEl.style.display = 'block'; hintEl.textContent = msgErr || ''; hintEl.className = 'field-hint field-hint--error'; }
+      } else {
+        if (hintEl) hintEl.style.display = 'none';
+      }
+    }
+    document.querySelectorAll('.input-validate-email').forEach(function(inp) {
+      var hint = inp.closest('.form-group--pro') ? inp.closest('.form-group--pro').querySelector('.field-hint-email') : null;
+      inp.addEventListener('input', function() { applyState(inp, validateEmail(inp.value), hint, '', 'Introduce un correo válido (ej: tu@email.com)'); });
+      inp.addEventListener('blur', function() { applyState(inp, validateEmail(inp.value), hint, '', 'Introduce un correo válido (ej: tu@email.com)'); });
+    });
+    document.querySelectorAll('.input-validate-password').forEach(function(inp) {
+      var hint = inp.closest('.form-group--pro') ? inp.closest('.form-group--pro').querySelector('.field-hint-password') : null;
+      inp.addEventListener('input', function() {
+        var ok = validatePassword(inp.value);
+        applyState(inp, ok, hint, '', ok === false ? 'Mínimo 8 caracteres' : null);
+        var confirmInp = document.getElementById('new_password_confirm');
+        if (confirmInp && confirmInp.value) {
+          var ch = document.querySelector('.field-hint-password-confirm');
+          if (confirmInp.value !== inp.value) {
+            confirmInp.classList.add('form-input--invalid'); confirmInp.classList.remove('form-input--valid');
+            if (ch) { ch.style.display = 'block'; ch.textContent = 'Las contraseñas no coinciden'; ch.className = 'field-hint field-hint--error'; }
+          } else {
+            confirmInp.classList.add('form-input--valid'); confirmInp.classList.remove('form-input--invalid');
+            if (ch) { ch.style.display = 'block'; ch.textContent = ''; ch.className = 'field-hint field-hint--ok'; }
+          }
+        }
+      });
+      inp.addEventListener('blur', function() { applyState(inp, validatePassword(inp.value), hint, '', 'Mínimo 8 caracteres'); });
+    });
+    document.querySelectorAll('.input-validate-password-confirm').forEach(function(inp) {
+      var hint = inp.closest('.form-group--pro') ? inp.closest('.form-group--pro').querySelector('.field-hint-password-confirm') : null;
+      var passInp = document.getElementById('new_password');
+      inp.addEventListener('input', function() {
+        var pass = passInp ? passInp.value : '';
+        var conf = inp.value;
+        if (!conf) { inp.classList.remove('form-input--valid', 'form-input--invalid'); if (hint) hint.style.display = 'none'; return; }
+        var ok = conf === pass && pass.length >= 8;
+        inp.classList.toggle('form-input--valid', ok);
+        inp.classList.toggle('form-input--invalid', !ok);
+        if (hint) { hint.style.display = 'block'; hint.textContent = ok ? '' : 'Las contraseñas no coinciden'; hint.className = 'field-hint ' + (ok ? 'field-hint--ok' : 'field-hint--error'); }
+      });
+      inp.addEventListener('blur', function() {
+        var pass = passInp ? passInp.value : '';
+        var conf = inp.value;
+        if (!conf) { inp.classList.remove('form-input--valid', 'form-input--invalid'); if (hint) hint.style.display = 'none'; return; }
+        var ok = conf === pass && pass.length >= 8;
+        inp.classList.toggle('form-input--valid', ok);
+        inp.classList.toggle('form-input--invalid', !ok);
+        if (hint) { hint.style.display = 'block'; hint.textContent = ok ? '' : 'Las contraseñas no coinciden'; hint.className = 'field-hint ' + (ok ? 'field-hint--ok' : 'field-hint--error'); }
+      });
+    });
+  })();
+  </script>
+  <script>
+  (function() {
+    var modal = document.getElementById('order-modal');
+    var closeBtn = document.querySelector('.close-modal__custom-ui-2');
+    var detailsEl = document.getElementById('modal-order-details');
+    var orderIdEl = document.getElementById('modal-order-id');
+    var baseUrl = '{{ request.scheme }}://{{ request.get_host }}';
+
+    function openLightbox(src) {
+      var lb = document.getElementById('profile-lightbox');
+      var img = document.getElementById('profile-lightbox-img');
+      if (lb && img) { img.src = src; lb.style.display = 'flex'; }
+    }
+    function closeLightbox() {
+      var lb = document.getElementById('profile-lightbox');
+      if (lb) lb.style.display = 'none';
+    }
+
+    document.querySelectorAll('.order-details-btn__custom-ui-2').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var id = this.getAttribute('data-order-id');
+        if (!id) return;
+        fetch('/orders/pedido/' + id + '/detalle/')
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            orderIdEl.textContent = '#' + d.order_number;
+            var html = '<div class="detail-row"><strong>Fecha</strong><span>' + d.created_at + '</span></div>';
+            html += '<div class="detail-row"><strong>Estado</strong><span>' + d.status + '</span></div>';
+            html += '<div class="detail-row"><strong>Método de pago</strong><span>' + d.payment_method + '</span></div>';
+            html += '<div class="detail-row"><strong>Cédula/RIF</strong><span>' + d.document + '</span></div>';
+            html += '<div class="detail-row"><strong>Tipo envío</strong><span>' + d.shipping_type + '</span></div>';
+            html += '<div class="detail-row"><strong>Agencia</strong><span>' + d.shipping_agency + '</span></div>';
+            html += '<div class="detail-row"><strong>Retiro oficina</strong><span>' + (d.office_pickup ? 'Sí' : 'No') + '</span></div>';
+            html += '<div class="detail-row"><strong>Dirección</strong><span>' + d.shipping_address + '</span></div>';
+            html += '<div class="detail-row"><strong>Ciudad</strong><span>' + d.shipping_city + '</span></div>';
+            html += '<div class="detail-row"><strong>Teléfono</strong><span>' + d.shipping_phone + '</span></div>';
+            html += '<div class="detail-row"><strong>Total</strong><span>$' + d.total + '</span></div>';
+            html += '<h4 style="margin-top:1rem;color:#0A2B32">Productos</h4>';
+            d.items.forEach(function(i) { html += '<div class="detail-row"><span>' + i.name + ' x ' + i.quantity + '</span><span>$' + i.total + '</span></div>'; });
+            if (d.notes !== '—') html += '<div class="detail-row"><strong>Notas</strong><span>' + d.notes + '</span></div>';
+            if (d.messages && d.messages.length) {
+              html += '<h4 style="margin-top:1.25rem;color:#0A2B32">Mensajes y comprobantes</h4>';
+              d.messages.forEach(function(m) {
+                html += '<div class="order-chat-msg ' + (m.is_from_admin ? 'admin' : 'user') + '" style="padding:10px 12px;margin-bottom:8px;border-radius:8px;background:' + (m.is_from_admin ? '#e8f4fd' : '#f0f0f0') + ';">';
+                html += '<div>' + m.message.replace(/\n/g, '<br>') + '</div>';
+                if (m.image_url) {
+                  var full = m.image_url.startsWith('http') ? m.image_url : baseUrl + m.image_url;
+                  html += '<img src="' + full + '" class="order-chat-msg-img" alt="Comprobante" style="max-width:180px;max-height:120px;cursor:pointer;border-radius:6px;margin-top:6px;border:1px solid #ddd" data-full="' + full + '">';
+                }
+                html += '<div style="font-size:0.75rem;color:#888;margin-top:4px">' + m.created_at + (m.is_from_admin ? ' - MUXDRY' : '') + '</div></div>';
+              });
+            }
+            detailsEl.innerHTML = html;
+            detailsEl.querySelectorAll('.order-chat-msg-img').forEach(function(img) {
+              img.addEventListener('click', function() { openLightbox(this.getAttribute('data-full')); });
+            });
+            modal.style.display = 'flex';
+          });
+      });
+    });
+
+    if (closeBtn && modal) closeBtn.addEventListener('click', function() { modal.style.display = 'none'; });
+    if (modal) modal.addEventListener('click', function(e) { if (e.target === modal) modal.style.display = 'none'; });
+  })();
+  </script>
+  <!-- Lightbox -->
+  <div id="profile-lightbox" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:10000;align-items:center;justify-content:center;padding:2rem;">
+    <button type="button" onclick="document.getElementById('profile-lightbox').style.display='none'" style="position:absolute;top:1rem;right:1rem;background:none;border:none;color:#fff;font-size:2rem;cursor:pointer">&times;</button>
+    <img id="profile-lightbox-img" src="" alt="Comprobante" style="max-width:95%;max-height:95%;object-fit:contain;border-radius:8px;">
+  </div>
 </body>
 </html>

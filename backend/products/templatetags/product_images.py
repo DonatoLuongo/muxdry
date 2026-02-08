@@ -27,6 +27,18 @@ SLUG_HOVER_IMAGE_PATHS = {
     'desodorante-corporal': 'assets/products/Desodorant-Corporal/Duradry-Corporal2.png',
 }
 
+# Galería: hasta 3 imágenes por producto (slug -> [img1, img2, img3])
+SLUG_GALLERY_IMAGES = {
+    'barra-am': ['assets/products/Barra-Antitranspirante/Barra-Duradry.png', 'assets/products/Barra-Antitranspirante/Barra-Clinica.jpg', 'assets/products/Barra-Antitranspirante/Barra.jpg'],
+    'duradry-barra': ['assets/products/Barra-Antitranspirante/Barra-Duradry.png', 'assets/products/Barra-Antitranspirante/Barra-Clinica.jpg', 'assets/products/Barra-Antitranspirante/Barra.jpg'],
+    'xerac-ac': ['assets/products/Xerac_AC/Xerac-Antitranspirante.png', 'assets/products/Xerac_AC/Xerac-2.png', 'assets/products/Xerac_AC/Xerac.png'],
+    'xerac': ['assets/products/Xerac_AC/Xerac.png', 'assets/products/Xerac_AC/Xerac-Antitranspirante.png', 'assets/products/Xerac_AC/Xerac-2.png'],
+    'drysol': ['assets/products/Drysol/Drysol.png', 'assets/products/Drysol/Drysol-2.png', 'assets/products/Drysol/Drysol-3.png'],
+    'wash': ['assets/products/Duradry-WASH/Duradry-Gel.png', 'assets/products/Duradry-WASH/Duradry-2.jpg', 'assets/products/Duradry-WASH/Gel-Baño.png'],
+    'duradry-wash': ['assets/products/Duradry-WASH/Duradry-Gel.png', 'assets/products/Duradry-WASH/Duradry-2.jpg', 'assets/products/Duradry-WASH/Gel-Baño.png'],
+    'desodorante-corporal': ['assets/products/Desodorant-Corporal/Duradry-Corporal.png', 'assets/products/Desodorant-Corporal/Duradry-Corporal2.png', 'assets/products/Desodorant-Corporal/Desodorante-Duradry-Corporal.png'],
+}
+
 DEFAULT_PRODUCT_IMAGE = 'assets/products/PROXI.png'
 
 
@@ -56,3 +68,25 @@ def product_hover_image_url(product):
     if product and product.image:
         return product.image.url
     return static(DEFAULT_PRODUCT_IMAGE)
+
+
+@register.simple_tag
+def product_gallery_urls(product):
+    """
+    Devuelve lista de hasta 3 URLs de imágenes para la galería del detalle.
+    Usa SLUG_GALLERY_IMAGES o fallback a imagen principal/hover.
+    """
+    urls = []
+    slug = getattr(product, 'slug', None) if product else None
+    if slug and slug in SLUG_GALLERY_IMAGES:
+        for path in SLUG_GALLERY_IMAGES[slug][:3]:
+            urls.append(static(path))
+    else:
+        main = product_image_url(product)
+        hover = product_hover_image_url(product)
+        urls = [main]
+        if hover != main:
+            urls.append(hover)
+        while len(urls) < 3:
+            urls.append(main)
+    return urls[:3]

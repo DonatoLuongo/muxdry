@@ -10,8 +10,8 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'price', 'stock', 'category', 'is_featured', 'is_best_seller')
-    list_filter = ('category', 'is_featured', 'is_best_seller')
+    list_display = ('name', 'price', 'stock', 'category', 'is_featured', 'is_new', 'is_best_seller')
+    list_filter = ('category', 'is_featured', 'is_new', 'is_best_seller')
     search_fields = ('name', 'sku', 'description')
     prepopulated_fields = {'slug': ('name',)}
     readonly_fields = ('sales_count', 'created_at', 'updated_at')

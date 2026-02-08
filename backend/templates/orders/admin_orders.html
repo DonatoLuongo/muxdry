@@ -8,7 +8,7 @@
     <div class="admin-orders-container">
         <div class="admin-orders-header">
             <h1><i class="fas fa-clipboard-list"></i> Panel de solicitudes de pedidos</h1>
-            <p>Solo administradores. Aquí puedes ver todas las solicitudes y actualizar su estado.</p>
+            <p>Solo administradores. Aquí puedes ver todas las solicitudes y actualizar su estado.{% if admin_orders_count %} <span class="admin-orders-indicator" title="{{ admin_orders_count }} pedido(s)" style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:4px 10px;background:#dcfce7;color:#166534;border-radius:20px;font-size:0.85rem;"><i class="fas fa-clipboard-list" style="color:#22c55e;"></i> {{ admin_orders_count }} pedido(s)</span>{% endif %}</p>
             <a href="{% url 'orders:current_orders' %}" class="admin-back-link"><i class="fas fa-arrow-left"></i> Volver a Mis pedidos</a>
         </div>
 
@@ -40,7 +40,7 @@
         </div>
 
         <div class="admin-orders-list">
-            {% for order in orders %}
+            {% for order, unread_client in orders_with_unread %}
             <div class="admin-order-card">
                 <div class="admin-order-main">
                     <div class="admin-order-meta">
@@ -61,6 +61,11 @@
                     </div>
                 </div>
                 <div class="admin-order-actions">
+                    <button type="button" class="admin-btn-view admin-order-view-btn" data-order-id="{{ order.id }}" data-order-number="{{ order.order_number }}" title="Ver solicitud completa"><i class="fas fa-eye"></i> Ver solicitud</button>
+                    <button type="button" class="admin-btn-msg admin-order-msg-btn" data-order-id="{{ order.id }}" data-order-number="{{ order.order_number }}" title="Conversación con el cliente">
+                        <i class="fas fa-comment"></i> Mensaje
+                        {% if unread_client %}<span class="admin-msg-unread-badge" title="Respuesta del cliente por leer">{{ unread_client }}</span>{% endif %}
+                    </button>
                     <form method="post" action="{% url 'orders:admin_orders' %}" class="admin-status-form">
                         {% csrf_token %}
                         <input type="hidden" name="order_id" value="{{ order.id }}">
@@ -84,11 +89,21 @@
         {% if page_obj.paginator.num_pages > 1 %}
         <nav class="admin-orders-pagination">
             {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}{% if q_filter %}&q={{ q_filter }}{% endif %}">&laquo; Anterior</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}{% if q_filter %}&q={{ q_filter }}{% endif %}" class="pagination-btn">Página anterior</a>
+            {% else %}
+            <span class="pagination-btn pagination-btn--disabled">Página anterior</span>
             {% endif %}
-            <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            {% for n in page_obj.paginator.page_range %}
+            {% if page_obj.number == n %}
+            <span class="pagination-btn pagination-btn--active">{{ n }}</span>
+            {% else %}
+            <a href="?page={{ n }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}{% if q_filter %}&q={{ q_filter }}{% endif %}" class="pagination-btn">{{ n }}</a>
+            {% endif %}
+            {% endfor %}
             {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}{% if q_filter %}&q={{ q_filter }}{% endif %}">Siguiente &raquo;</a>
+            <a href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}{% if q_filter %}&q={{ q_filter }}{% endif %}" class="pagination-btn">Página siguiente</a>
+            {% else %}
+            <span class="pagination-btn pagination-btn--disabled">Página siguiente</span>
             {% endif %}
         </nav>
         {% endif %}
@@ -128,8 +143,188 @@
 .admin-order-actions select { padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; }
 .admin-order-actions button { padding: 6px 12px; background: #284660; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
 .admin-orders-empty { text-align: center; padding: 3rem; background: #fff; border-radius: 12px; color: #6c757d; }
-.admin-orders-pagination { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap; }
-.admin-orders-pagination a { padding: 8px 14px; background: #fff; border: 1px solid #ddd; border-radius: 6px; color: #0A2B32; text-decoration: none; }
-.admin-orders-pagination a:hover { background: #f0f0f0; }
+.admin-orders-pagination, .orders-pagination-nav { display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap; }
+.admin-orders-pagination a, .orders-pagination-nav a { padding: 8px 14px; background: #fff; border: 1px solid #ddd; border-radius: 6px; color: #0A2B32; text-decoration: none; }
+.admin-orders-pagination a:hover, .orders-pagination-nav a:hover { background: #f0f0f0; }
+.pagination-btn { display: inline-flex; align-items: center; padding: 8px 14px; border: 1px solid #ddd; border-radius: 6px; background: #fff; color: #333; text-decoration: none; font-size: 0.9rem; }
+.pagination-btn:hover { background: #f0f0f0; }
+.pagination-btn--active { background: #0A2B32 !important; color: #fff !important; border-color: #0A2B32 !important; cursor: default; }
+.pagination-btn--disabled { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+.admin-btn-view, .admin-btn-msg { padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; border: 1px solid #284660; background: #fff; color: #284660; margin-right: 8px; }
+.admin-btn-view:hover, .admin-btn-msg:hover { background: #284660; color: #fff; }
+.admin-order-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.admin-modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; padding: 1rem; }
+.admin-modal-overlay.is-open { display: flex; }
+.admin-modal-content { background: #fff; border-radius: 12px; max-width: 520px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 1.5rem; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+.admin-modal-content--wide { max-width: 680px; }
+.admin-modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; }
+.admin-detail-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; font-size: 0.95rem; }
+.admin-msg-form { margin-top: 1rem; }
+.admin-msg-form textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; min-height: 80px; }
+.admin-msg-form button { margin-top: 8px; padding: 10px 20px; background: #0A2B32; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+.admin-msg-historial { margin: 1rem 0; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; max-height: 140px; overflow: hidden; }
+.admin-msg-historial h4 { margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #0A2B32; }
+.admin-msg-historial-list { max-height: 90px; overflow-y: auto; font-size: 0.85rem; }
+.admin-msg-historial-item { padding: 6px 8px; margin-bottom: 4px; background: #fff; border-radius: 4px; border-left: 3px solid #0A2B32; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.admin-msg-historial-item .historial-time { font-size: 0.75rem; color: #888; margin-right: 8px; }
+.admin-msg-historial-nav { display: flex; gap: 4px; margin-top: 6px; justify-content: center; }
+.admin-msg-historial-nav button { padding: 2px 8px; font-size: 0.8rem; border: 1px solid #ddd; background: #fff; border-radius: 4px; cursor: pointer; }
+.admin-msg-historial-nav button:hover { background: #f0f0f0; }
+.admin-msg-historial-nav button.active { background: #0A2B32; color: #fff; border-color: #0A2B32; }
+.admin-msg-historial-empty { color: #888; font-size: 0.85rem; font-style: italic; }
+.admin-msg-unread-badge { background: #e67e22; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; margin-left: 4px; }
+.admin-msg-conversacion { max-height: 220px; overflow-y: auto; margin: 1rem 0; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; }
+.admin-msg-conv-item { padding: 8px 10px; margin-bottom: 6px; border-radius: 6px; font-size: 0.9rem; }
+.admin-msg-conv-item.admin { background: #e8f4fd; border-left: 4px solid #0A2B32; }
+.admin-msg-conv-item.client { background: #f0f0f0; border-left: 4px solid #6c757d; margin-left: 1rem; }
+.admin-msg-conv-img { max-width: 160px; max-height: 100px; cursor: pointer; border-radius: 4px; margin-top: 6px; border: 1px solid #ddd; }
+.admin-msg-conv-time { font-size: 0.75rem; color: #888; margin-top: 4px; }
 </style>
+
+<div id="admin-order-modal" class="admin-modal-overlay">
+    <div class="admin-modal-content">
+        <button type="button" class="admin-modal-close" id="admin-close-modal">&times;</button>
+        <h2><i class="fas fa-file-alt"></i> Solicitud <span id="admin-modal-order-id"></span></h2>
+        <div id="admin-order-detail-body"></div>
+    </div>
+</div>
+
+<div id="admin-msg-modal" class="admin-modal-overlay">
+    <div class="admin-modal-content admin-modal-content--wide">
+        <button type="button" class="admin-modal-close" id="admin-close-msg">&times;</button>
+        <h2><i class="fas fa-comment"></i> Conversación - Pedido <span id="admin-msg-order-id"></span></h2>
+        <div id="admin-msg-conversacion" class="admin-msg-conversacion">
+            <div id="admin-msg-conversacion-list"></div>
+        </div>
+        <p style="color:#666;font-size:0.9rem">El cliente verá tu mensaje en "Mis pedidos" &rarr; Mensajes.</p>
+        <form id="admin-send-msg-form" class="admin-msg-form">
+            {% csrf_token %}
+            <input type="hidden" name="order_id" id="admin-msg-order-id-input">
+            <label><span>Mensaje (datos de pago, observación, etc.)</span>
+            <textarea name="message" required placeholder="Ej: Datos para transferencia: Banesco, cuenta 0102-xxxx, a nombre de..."></textarea></label>
+            <button type="submit"><i class="fas fa-paper-plane"></i> Enviar</button>
+        </form>
+    </div>
+</div>
+
+<!-- Lightbox admin para comprobantes -->
+<div id="admin-lightbox" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:10000;align-items:center;justify-content:center;padding:2rem;">
+    <button type="button" onclick="document.getElementById('admin-lightbox').style.display='none'" style="position:absolute;top:1rem;right:1rem;background:none;border:none;color:#fff;font-size:2rem;cursor:pointer">&times;</button>
+    <img id="admin-lightbox-img" src="" alt="Comprobante" style="max-width:95%;max-height:95%;object-fit:contain;border-radius:8px;">
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var viewModal = document.getElementById('admin-order-modal');
+    var msgModal = document.getElementById('admin-msg-modal');
+    var detailBody = document.getElementById('admin-order-detail-body');
+    var msgForm = document.getElementById('admin-send-msg-form');
+    var baseUrl = '/orders/mis-pedidos/panel-admin';
+
+    function renderDetail(d) {
+        var html = '<div class="admin-detail-row"><strong>Cliente</strong><span>' + (d.user_email || '—') + '</span></div>';
+        html += '<div class="admin-detail-row"><strong>Fecha</strong><span>' + d.created_at + '</span></div>';
+        html += '<div class="admin-detail-row"><strong>Estado</strong><span>' + d.status + '</span></div>';
+        html += '<div class="admin-detail-row"><strong>Método pago</strong><span>' + d.payment_method + '</span></div>';
+        html += '<div class="admin-detail-row"><strong>Cédula/RIF</strong><span>' + d.document + '</span></div>';
+        html += '<div class="admin-detail-row"><strong>Tipo envío</strong><span>' + d.shipping_type + '</span></div>';
+        html += '<div class="admin-detail-row"><strong>Agencia</strong><span>' + d.shipping_agency + '</span></div>';
+        html += '<div class="admin-detail-row"><strong>Retiro oficina</strong><span>' + (d.office_pickup ? 'Sí' : 'No') + '</span></div>';
+        html += '<div class="admin-detail-row"><strong>Dirección</strong><span>' + d.shipping_address + '</span></div>';
+        html += '<div class="admin-detail-row"><strong>Ciudad</strong><span>' + d.shipping_city + '</span></div>';
+        html += '<div class="admin-detail-row"><strong>Teléfono</strong><span>' + d.shipping_phone + '</span></div>';
+        html += '<div class="admin-detail-row"><strong>Total</strong><span>$' + d.total + '</span></div>';
+        html += '<h4 style="margin-top:1rem;color:#0A2B32">Productos</h4>';
+        (d.items || []).forEach(function(i) { html += '<div class="admin-detail-row"><span>' + i.name + ' x ' + i.quantity + '</span><span>$' + i.total + '</span></div>'; });
+        if (d.notes && d.notes !== '—') html += '<div class="admin-detail-row"><strong>Notas</strong><span>' + d.notes + '</span></div>';
+        return html;
+    }
+    document.querySelectorAll('.admin-order-view-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var id = this.getAttribute('data-order-id');
+            var num = this.getAttribute('data-order-number');
+            document.getElementById('admin-modal-order-id').textContent = '#' + num;
+            fetch(baseUrl + '/pedido/' + id + '/detalle/').then(function(r) { return r.json(); }).then(function(d) {
+                detailBody.innerHTML = renderDetail(d);
+                viewModal.classList.add('is-open');
+            });
+        });
+    });
+    var adminBaseUrl = window.location.origin;
+
+    function renderAdminConversacion(messages) {
+        var listEl = document.getElementById('admin-msg-conversacion-list');
+        if (!messages || messages.length === 0) {
+            listEl.innerHTML = '<div class="admin-msg-historial-empty">No hay mensajes aún. Envía el primer mensaje al cliente.</div>';
+            return;
+        }
+        var html = '';
+        messages.forEach(function(m) {
+            var cls = m.is_from_admin ? 'admin' : 'client';
+            var label = m.is_from_admin ? 'MUXDRY' : 'Cliente';
+            var fullImg = '';
+            if (m.image_url) {
+                var url = m.image_url.startsWith('http') ? m.image_url : adminBaseUrl + m.image_url;
+                fullImg = '<img src="' + url + '" class="admin-msg-conv-img" alt="Comprobante" data-full="' + url + '">';
+            }
+            html += '<div class="admin-msg-conv-item ' + cls + '">';
+            var txt = (m.message || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g, '<br>');
+            html += '<div>' + txt + '</div>';
+            html += fullImg;
+            html += '<div class="admin-msg-conv-time">' + m.created_at + ' - ' + label + '</div></div>';
+        });
+        listEl.innerHTML = html;
+        listEl.querySelectorAll('.admin-msg-conv-img').forEach(function(img) {
+            img.addEventListener('click', function() {
+                var lb = document.getElementById('admin-lightbox');
+                var lbImg = document.getElementById('admin-lightbox-img');
+                if (lb && lbImg) { lbImg.src = this.getAttribute('data-full'); lb.style.display = 'flex'; }
+            });
+        });
+        listEl.scrollTop = listEl.scrollHeight;
+    }
+
+    document.querySelectorAll('.admin-order-msg-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var id = this.getAttribute('data-order-id');
+            var num = this.getAttribute('data-order-number');
+            document.getElementById('admin-msg-order-id').textContent = '#' + num;
+            document.getElementById('admin-msg-order-id-input').value = id;
+            document.querySelector('#admin-send-msg-form textarea').value = '';
+            msgModal.classList.add('is-open');
+            fetch(baseUrl + '/pedido/' + id + '/detalle/?mark_client_read=1').then(function(r) { return r.json(); }).then(function(d) {
+                renderAdminConversacion(d.messages || []);
+                var badge = btn.querySelector('.admin-msg-unread-badge');
+                if (badge) badge.remove();
+                if (typeof window.refreshOrdersUnreadBadges === 'function') window.refreshOrdersUnreadBadges();
+            }).catch(function() { renderAdminConversacion([]); });
+        });
+    });
+    document.getElementById('admin-close-modal').onclick = function() { viewModal.classList.remove('is-open'); };
+    document.getElementById('admin-close-msg').onclick = function() { msgModal.classList.remove('is-open'); };
+    viewModal.addEventListener('click', function(e) { if (e.target === viewModal) viewModal.classList.remove('is-open'); });
+    msgModal.addEventListener('click', function(e) { if (e.target === msgModal) msgModal.classList.remove('is-open'); });
+    msgForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var fd = new FormData(msgForm);
+        var orderId = document.getElementById('admin-msg-order-id-input').value;
+        fetch(baseUrl + '/enviar-mensaje/', { method: 'POST', body: fd, headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value, 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(r) { return r.json(); })
+            .then(function(res) {
+                if (res.ok) {
+                    alert('Mensaje enviado. El cliente lo verá en Mis pedidos.');
+                    fetch(baseUrl + '/pedido/' + orderId + '/detalle/').then(function(r2) { return r2.json(); }).then(function(d) {
+                        renderAdminConversacion(d.messages || []);
+                    });
+                    document.querySelector('#admin-send-msg-form textarea').value = '';
+                } else { alert('Error: ' + (res.error || 'No se pudo enviar')); }
+            });
+    });
+
+    var adminLightbox = document.getElementById('admin-lightbox');
+    if (adminLightbox) adminLightbox.addEventListener('click', function(e) { if (e.target === adminLightbox) adminLightbox.style.display = 'none'; });
+})();
+</script>
 {% endblock %}

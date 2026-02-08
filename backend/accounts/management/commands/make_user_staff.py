@@ -6,7 +6,10 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
-    help = 'Convierte un usuario en administrador (is_staff=True) por email o username.'
+    help = (
+        'Convierte un usuario en Administrador (is_staff) o Gestor BD (is_superuser). '
+        'Por defecto crea Administrador (panel de solicitudes). Usa --superuser para Gestor BD (panel en /panel-interno-mux/).'
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -17,7 +20,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--superuser',
             action='store_true',
-            help='Además conceder is_superuser (acceso total al Django Admin).',
+            help='Conceder is_superuser (Gestor BD: acceso al panel Django en /panel-interno-mux/).',
         )
 
     def handle(self, *args, **options):
