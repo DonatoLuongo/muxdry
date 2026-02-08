@@ -6,8 +6,6 @@ Puedes subir el proyecto a un servicio en la nube y obtener una **URL pública**
 
 ## Opción recomendada: Render (gratis para empezar)
 
-
-
 [Render](https://render.com) ofrece un plan gratuito con una URL tipo `https://tu-app.onrender.com`. La app puede “dormir” tras unos minutos sin uso; la primera visita tarda unos segundos en despertar.
 
 ### 1. Preparar el proyecto

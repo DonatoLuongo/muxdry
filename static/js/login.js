@@ -453,13 +453,5 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Agregar funcionalidad para "Olvidé mi contraseña"
-    const forgotPasswordLink = document.querySelector('.forgot-password');
-    if (forgotPasswordLink) {
-        forgotPasswordLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            // Aquí puedes implementar la recuperación de contraseña
-            alert('Funcionalidad de recuperación de contraseña en desarrollo.');
-        });
-    }
+    // "¿Olvidaste tu contraseña?" ya enlaza a /accounts/restablecer-contraseña/
 });

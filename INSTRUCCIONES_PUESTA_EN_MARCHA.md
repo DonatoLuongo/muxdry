@@ -91,9 +91,9 @@ Para crear categorías (Duradry, Xerac, Drysol) y productos de ejemplo:
 python manage.py seed_products
 ```
 
-### 8. Django Admin (/admin/)
+### 8. Panel Django Admin (/panel-interno-mux/)
 
-El panel de administración en **http://127.0.0.1:8000/admin/** permite gestionar (con un superusuario):
+El panel de administración en **http://127.0.0.1:8000/panel-interno-mux/** permite gestionar (solo superusuarios / Gestor BD):
 - **Product**, **Category**: listar, crear, editar y borrar productos y categorías.
 - **Order**, **OrderItem**: ver pedidos y cambiar estado (pendiente → confirmado → enviado → entregado).
 - **Cart**, **CartItem**: ver carritos de usuarios.
@@ -112,7 +112,7 @@ python manage.py runserver
 - Inicio: http://127.0.0.1:8000/
 - Login: http://127.0.0.1:8000/accounts/login/
 - Perfil (requiere login): http://127.0.0.1:8000/accounts/perfil/
-- Admin: http://127.0.0.1:8000/admin/
+- Admin (solo superuser): http://127.0.0.1:8000/panel-interno-mux/
 
 ---
 
