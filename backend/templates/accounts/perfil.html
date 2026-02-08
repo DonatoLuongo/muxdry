@@ -15,6 +15,15 @@
   .pagination-btn:hover { background: #f0f0f0; }
   .pagination-btn--active { background: #0A2B32 !important; color: #fff !important; border-color: #0A2B32 !important; }
   .pagination-btn--disabled { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+  .history-search-feedback { font-size: 0.9rem; color: #5a6268; margin: 0 0 1rem 0; padding: 0.5rem 0; }
+  .history-search-feedback i { color: #0A2B32; margin-right: 6px; }
+  .profile-history-empty-card { width: 100%; max-width: 540px; min-width: 300px; margin: 2rem auto; padding: 2.75rem 2.5rem; text-align: center; background: #fff; border-radius: 12px; border: 1px solid #e0e8ec; border-top: 4px solid #0A2B32; box-shadow: 0 6px 24px rgba(10,43,50,0.08); box-sizing: border-box; }
+  .profile-history-empty-card .profile-history-empty-icon { width: 76px; height: 76px; margin: 0 auto 1.5rem; background: linear-gradient(145deg, #f0f7fa 0%, #e2eef4 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 12px rgba(10,43,50,0.06); }
+  .profile-history-empty-card .profile-history-empty-icon i { font-size: 1.85rem; color: #0A2B32; }
+  .profile-history-empty-card h3 { font-size: 1.3rem; color: #0A2B32; margin-bottom: 0.75rem; font-weight: 700; }
+  .profile-history-empty-card p { color: #5a6268; font-size: 0.975rem; line-height: 1.65; margin-bottom: 1.5rem; }
+  .profile-history-empty-card .profile-history-empty-cta { display: inline-flex; align-items: center; gap: 0.5rem; padding: 12px 24px; border-radius: 8px; font-weight: 600; text-decoration: none; background: #0A2B32; color: #fff; transition: background 0.2s, transform 0.2s; }
+  .profile-history-empty-card .profile-history-empty-cta:hover { background: #0d3840; transform: translateY(-1px); color: #fff; }
   </style>
 </head>
 
@@ -35,7 +44,7 @@
       </div>
 
       {% if messages %}
-      <div class="profile-messages" style="margin-bottom:1rem;">
+      <div class="profile-messages profile-messages--auto-dismiss" style="margin-bottom:1rem;">
         {% for message in messages %}
         <p class="profile-message profile-message--{{ message.tags }}" style="padding:0.75rem 1rem;border-radius:8px;margin:0.25rem 0;{% if message.tags == 'success' %}background:#d4edda;color:#155724;{% elif message.tags == 'error' %}background:#f8d7da;color:#721c24;{% else %}background:#e8f4fd;color:#0c5460;{% endif %}">
           <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i> {{ message }}
@@ -78,6 +87,13 @@
               </div>
             </form>
           </div>
+          <p class="history-search-feedback">
+            {% if historial_period or historial_date or historial_q %}
+            <i class="fas fa-filter"></i> Filtros aplicados. Resultado en historial: <strong>{{ page_obj_historial.paginator.count }}</strong> pedido(s) con los criterios seleccionados.
+            {% else %}
+            <i class="fas fa-history"></i> Mostrando todo el historial: <strong>{{ page_obj_historial.paginator.count }}</strong> pedido(s).
+            {% endif %}
+          </p>
           <div class="profile-history__custom-ui-2">
             {% for pedido in historial_pedidos %}
             <div class="history-item__custom-ui-2">
@@ -107,13 +123,19 @@
                   </div>
                 </div>
               </div>
-              <button class="order-details-btn__custom-ui-2" data-order-id="{{ pedido.id }}">Ver detalles de compra realizada</button>
+              <div class="profile-history-order-actions">
+                <button class="order-details-btn__custom-ui-2" data-order-id="{{ pedido.id }}">Ver detalles de compra realizada</button>
+                {% if pedido.status == 'delivered' %}
+                <a href="{% url 'orders:invoice' pedido.id %}" class="order-invoice-btn__custom-ui-2" target="_blank" rel="noopener" title="Ver factura"><i class="fas fa-file-invoice"></i> Ver factura</a>
+                {% endif %}
+              </div>
             </div>
             {% empty %}
-            <div class="no-orders-message">
-              <i class="fas fa-history"></i>
+            <div class="no-orders-message profile-history-empty-card">
+              <div class="profile-history-empty-icon"><i class="fas fa-clipboard-check"></i></div>
               <h3>No hay historial de compras</h3>
-              <p>Tus pedidos completados aparecerán aquí</p>
+              <p>Los pedidos que hayas completado o cancelado aparecerán aquí. Podrás ver el detalle de cada compra y el estado de entrega.</p>
+              <a href="{% url 'home' %}" class="profile-history-empty-cta"><i class="fas fa-store"></i> Ir a la tienda</a>
             </div>
             {% endfor %}
           </div>
@@ -507,6 +529,25 @@
 
     if (closeBtn && modal) closeBtn.addEventListener('click', function() { modal.style.display = 'none'; });
     if (modal) modal.addEventListener('click', function(e) { if (e.target === modal) modal.style.display = 'none'; });
+  })();
+  </script>
+  <script>
+  (function() {
+    var container = document.querySelector('.profile-messages--auto-dismiss');
+    if (!container) return;
+    var msgs = container.querySelectorAll('.profile-message');
+    if (msgs.length === 0) return;
+    var delay = 4000;
+    msgs.forEach(function(p) {
+      setTimeout(function() {
+        p.style.transition = 'opacity 0.4s ease';
+        p.style.opacity = '0';
+        setTimeout(function() {
+          p.remove();
+          if (container.querySelectorAll('.profile-message').length === 0) container.remove();
+        }, 400);
+      }, delay);
+    });
   })();
   </script>
   <!-- Lightbox -->

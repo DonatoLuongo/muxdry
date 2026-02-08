@@ -6,6 +6,7 @@ from .views import (
     update_cart_item_view, cancel_order_view,
     order_detail_json_view, order_messages_json_view, admin_order_detail_json_view, admin_send_message_view,
     client_send_message_view, unread_count_json_view,
+    invoice_view, admin_set_payment_reference_view,
 )
 
 app_name = 'orders'
@@ -29,5 +30,7 @@ urlpatterns = [
     path('mis-pedidos/panel-admin/enviar-mensaje/', admin_send_message_view, name='admin_send_message'),
     path('pedido/<int:order_id>/responder/', client_send_message_view, name='client_send_message'),
     path('api/unread-count/', unread_count_json_view, name='unread_count_json'),
+    path('pedido/<int:order_id>/factura/', invoice_view, name='invoice'),
+    path('mis-pedidos/panel-admin/pedido/referencia-pago/', admin_set_payment_reference_view, name='admin_set_payment_reference'),
     path('', include(router.urls)),
 ]

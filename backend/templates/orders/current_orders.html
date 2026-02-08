@@ -48,6 +48,14 @@
             </form>
         </div>
 
+        <p class="orders-search-feedback">
+            {% if filtro_period or filtro_date or filtro_q %}
+            <i class="fas fa-filter"></i> Filtros aplicados. Resultado: <strong>{{ page_obj.paginator.count }}</strong> pedido(s) con los criterios seleccionados.
+            {% else %}
+            <i class="fas fa-list"></i> Mostrando todos tus pedidos actuales: <strong>{{ page_obj.paginator.count }}</strong> pedido(s).
+            {% endif %}
+        </p>
+
         <div class="current-orders-list">
             {% for pedido, unread_count in pedidos_with_unread %}
             <div class="profile-order-card__custom-ui-2 current-order-card">
@@ -83,6 +91,9 @@
                         <i class="fas fa-comment-alt"></i> Mensajes
                         {% if unread_count %}<span class="order-unread-badge" title="Tiene un nuevo mensaje por leer">{{ unread_count }}</span>{% endif %}
                     </button>
+                    {% if pedido.status == 'delivered' %}
+                    <a href="{% url 'orders:invoice' pedido.id %}" class="order-invoice-btn" target="_blank" rel="noopener" title="Ver factura"><i class="fas fa-file-invoice"></i> Ver factura</a>
+                    {% endif %}
                 </div>
                 {% if pedido.status == 'pending' or pedido.status == 'confirmed' %}
                 <form method="post" action="{% url 'orders:cancel_order' %}" class="order-cancel-form" onsubmit="return confirm('¿Cancelar este pedido? Se notificará al administrador.');">
@@ -94,11 +105,11 @@
                 {% endif %}
             </div>
             {% empty %}
-            <div class="no-orders-message current-orders-empty">
-                <i class="fas fa-box-open"></i>
+            <div class="no-orders-message current-orders-empty no-orders-card">
+                <div class="no-orders-icon-wrap"><i class="fas fa-clipboard-list"></i></div>
                 <h3>No tienes pedidos actuales</h3>
-                <p>Visita nuestra tienda y descubre nuestros productos</p>
-                <a href="{% url 'home' %}" class="button primary">Ir a la tienda</a>
+                <p>Tu historial de pedidos en curso aparecerá aquí. Cuando realices una compra, podrás rastrear el estado y ver los detalles desde esta sección.</p>
+                <a href="{% url 'home' %}" class="button primary no-orders-cta"><i class="fas fa-store"></i> Ir a la tienda</a>
             </div>
             {% endfor %}
         </div>
@@ -206,6 +217,15 @@
 .order-cancel-btn { padding: 8px 14px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 6px; font-size: 0.9rem; cursor: pointer; }
 .order-cancel-btn:hover { background: #dc3545; color: #fff; }
 .current-orders-empty { padding: 3rem 2rem; background: #fff; border-radius: 12px; text-align: center; }
+.no-orders-card { width: 100%; max-width: 540px; min-width: 300px; margin: 0 auto; padding: 2.75rem 2.5rem; box-shadow: 0 6px 24px rgba(10,43,50,0.08); border: 1px solid #e0e8ec; border-top: 4px solid #0A2B32; box-sizing: border-box; border-radius: 12px; background: #fff; }
+.no-orders-card .no-orders-icon-wrap { width: 76px; height: 76px; margin: 0 auto 1.5rem; background: linear-gradient(145deg, #f0f7fa 0%, #e2eef4 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 12px rgba(10,43,50,0.06); }
+.no-orders-card .no-orders-icon-wrap i { font-size: 1.85rem; color: #0A2B32; }
+.no-orders-card h3 { font-size: 1.3rem; color: #0A2B32; margin-bottom: 0.75rem; font-weight: 700; }
+.no-orders-card p { color: #5a6268; font-size: 0.975rem; line-height: 1.65; margin-bottom: 1.5rem; max-width: 36em; margin-left: auto; margin-right: auto; }
+.no-orders-card .no-orders-cta { display: inline-flex; align-items: center; gap: 0.5rem; padding: 12px 24px; border-radius: 8px; font-weight: 600; text-decoration: none; background: #0A2B32; color: #fff; transition: background 0.2s, transform 0.2s; }
+.no-orders-card .no-orders-cta:hover { background: #0d3840; transform: translateY(-1px); }
+.orders-search-feedback { font-size: 0.9rem; color: #5a6268; margin: 0 0 1rem 0; padding: 0.5rem 0; }
+.orders-search-feedback i { color: #0A2B32; margin-right: 6px; }
 .orders-pagination-nav, .current-orders-pagination { display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap; }
 .orders-pagination-nav .pagination-btn, .current-orders-pagination .pagination-btn { padding: 8px 14px; border: 1px solid #ddd; border-radius: 6px; background: #fff; color: #333; text-decoration: none; font-size: 0.9rem; }
 .orders-pagination-nav .pagination-btn:hover { background: #f0f0f0; }
@@ -214,9 +234,14 @@
 .order-action-btns { display: flex; gap: 0.75rem; margin: 0 1.5rem 1rem; flex-wrap: wrap; }
 .order-detail-btn, .order-messages-btn {
     padding: 8px 14px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; border: 1px solid #0A2B32;
-    background: #fff; color: #0A2B32; display: inline-flex; align-items: center; gap: 6px;
+    background: #fff; color: #0A2B32; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
 }
 .order-detail-btn:hover, .order-messages-btn:hover { background: #0A2B32; color: #fff; }
+.order-invoice-btn {
+    padding: 8px 14px; border-radius: 6px; font-size: 0.9rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none;
+    background: #c97070; color: #fff; border: 1px solid #b85c5c;
+}
+.order-invoice-btn:hover { background: #b85c5c; color: #fff; }
 .order-unread-badge {
     background: #e67e22; color: #fff; font-size: 0.75rem; padding: 2px 6px; border-radius: 10px; margin-left: 4px;
 }

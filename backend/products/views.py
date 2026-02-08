@@ -2,8 +2,23 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.conf import settings
 from django.core.mail import send_mail
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from .models import Product, Category
+from django.http import JsonResponse
+from django.db.utils import ProgrammingError
+from .models import Product, Category, ProductFavorite
+
+
+def _user_favorite_ids(request):
+    if not request.user.is_authenticated:
+        return set()
+    try:
+        return set(
+            ProductFavorite.objects.filter(user=request.user).values_list('product_id', flat=True)
+        )
+    except ProgrammingError:
+        # Tabla products_productfavorite aún no existe (migración sin aplicar)
+        return set()
 
 # Mapeo slug -> template para productos estáticos
 PRODUCT_TEMPLATES = {
@@ -73,6 +88,7 @@ def home_view(request):
         'featured_product': Product.objects.filter(is_featured=True).first(),
         'viral_products': viral_products,
         'categories': Category.objects.all(),
+        'user_favorite_ids': _user_favorite_ids(request),
         'banners': [
             {'image': 'assets/Banner/mux-1.png', 'alt': 'Oferta 1'},
             {'image': 'assets/Banner/mux-2.png', 'alt': 'Oferta 2'},
@@ -120,6 +136,7 @@ def category_view(request, slug):
         'category': category,
         'products': products,
         'categories': Category.objects.all(),
+        'user_favorite_ids': _user_favorite_ids(request),
     })
 
 
@@ -138,6 +155,7 @@ def search_view(request):
         'search_query': q,
         'products': products,
         'categories': Category.objects.all(),
+        'user_favorite_ids': _user_favorite_ids(request),
     })
 
 
@@ -164,3 +182,23 @@ def product_wash_view(request):
 def product_desodorante_view(request):
     """Página del producto Desodorante Corporal."""
     return render(request, 'products/Desodorante-Corporal.html')
+
+
+def toggle_favorite_view(request):
+    """Toggle favorito (me encanta) del producto. POST product_id. Devuelve JSON { favorited: bool }."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'auth_required'}, status=401)
+    product_id = request.POST.get('product_id')
+    if not product_id:
+        return JsonResponse({'error': 'product_id requerido'}, status=400)
+    try:
+        product = Product.objects.get(pk=int(product_id))
+    except (Product.DoesNotExist, ValueError):
+        return JsonResponse({'error': 'Producto no encontrado'}, status=404)
+    fav, created = ProductFavorite.objects.get_or_create(user=request.user, product=product)
+    if not created:
+        fav.delete()
+        return JsonResponse({'favorited': False})
+    return JsonResponse({'favorited': True})

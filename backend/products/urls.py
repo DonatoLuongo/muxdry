@@ -13,4 +13,5 @@ urlpatterns = [
     path('drysol/', views.product_drysol_view, name='product_drysol'),
     path('wash/', views.product_wash_view, name='product_wash'),
     path('desodorante-corporal/', views.product_desodorante_view, name='product_desodorante'),
+    path('api/favorito/', views.toggle_favorite_view, name='toggle_favorite'),
 ]

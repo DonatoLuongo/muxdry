@@ -171,3 +171,10 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+
+# Datos de la empresa (facturas)
+COMPANY_NAME = config('COMPANY_NAME', default='MULTIVENTAS XIMAREN C.A.')
+COMPANY_RIF = config('COMPANY_RIF', default='J-12345678-9')
+COMPANY_PHONE = config('COMPANY_PHONE', default='(58) 412-991-4914')
+COMPANY_EMAIL = config('COMPANY_EMAIL', default='informacion@muxdry.com')
+COMPANY_ADDRESS = config('COMPANY_ADDRESS', default='Caracas, Av. Andrés Bello, Torre Centro Andrés Bello, Frente a la Plaza Andrés Bello, Piso 15')

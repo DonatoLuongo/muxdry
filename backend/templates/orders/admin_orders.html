@@ -39,6 +39,14 @@
             </form>
         </div>
 
+        <p class="admin-orders-feedback">
+            {% if orders_with_unread %}
+            <i class="fas fa-filter"></i> Resultado de los filtros seleccionados: <strong>{{ page_obj.paginator.count }}</strong> pedido(s) encontrado(s).
+            {% else %}
+            <i class="fas fa-inbox"></i> No hay pedidos con los filtros seleccionados.
+            {% endif %}
+        </p>
+
         <div class="admin-orders-list">
             {% for order, unread_client in orders_with_unread %}
             <div class="admin-order-card">
@@ -66,6 +74,9 @@
                         <i class="fas fa-comment"></i> Mensaje
                         {% if unread_client %}<span class="admin-msg-unread-badge" title="Respuesta del cliente por leer">{{ unread_client }}</span>{% endif %}
                     </button>
+                    {% if order.status == 'delivered' %}
+                    <a href="{% url 'orders:invoice' order.id %}" class="admin-btn-invoice" target="_blank" rel="noopener" title="Ver factura"><i class="fas fa-file-invoice"></i> Ver factura</a>
+                    {% endif %}
                     <form method="post" action="{% url 'orders:admin_orders' %}" class="admin-status-form">
                         {% csrf_token %}
                         <input type="hidden" name="order_id" value="{{ order.id }}">
@@ -124,6 +135,8 @@
 .admin-filters-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
 .admin-filters-form select, .admin-filters-form input { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; }
 .admin-filters-form button { padding: 8px 16px; background: #0A2B32; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+.admin-orders-feedback { font-size: 0.9rem; color: #5a6268; margin: 0 0 1rem 0; padding: 0.5rem 0; }
+.admin-orders-feedback i { color: #0A2B32; margin-right: 6px; }
 .admin-orders-list { display: flex; flex-direction: column; gap: 1rem; }
 .admin-order-card { display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: start; background: #fff; padding: 1.25rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #e5e9ec; }
 @media (max-width: 640px) { .admin-order-card { grid-template-columns: 1fr; } }
@@ -179,6 +192,10 @@
 .admin-msg-conv-item.client { background: #f0f0f0; border-left: 4px solid #6c757d; margin-left: 1rem; }
 .admin-msg-conv-img { max-width: 160px; max-height: 100px; cursor: pointer; border-radius: 4px; margin-top: 6px; border: 1px solid #ddd; }
 .admin-msg-conv-time { font-size: 0.75rem; color: #888; margin-top: 4px; }
+.admin-btn-invoice { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 14px; font-size: 0.9rem; background: #c97070; color: #fff; border-radius: 6px; text-decoration: none; border: 1px solid #b85c5c; }
+.admin-btn-invoice:hover { background: #b85c5c; color: #fff; }
+.admin-btn-save-ref { background: #28a745; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px; }
+.admin-btn-save-ref:hover { background: #218838; }
 </style>
 
 <div id="admin-order-modal" class="admin-modal-overlay">
@@ -192,9 +209,20 @@
 <div id="admin-msg-modal" class="admin-modal-overlay">
     <div class="admin-modal-content admin-modal-content--wide">
         <button type="button" class="admin-modal-close" id="admin-close-msg">&times;</button>
-        <h2><i class="fas fa-comment"></i> Conversación - Pedido <span id="admin-msg-order-id"></span></h2>
+        <h2 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <span><i class="fas fa-comment"></i> Conversación - Pedido <span id="admin-msg-order-id"></span></span>
+            <a id="admin-msg-invoice-link" href="#" target="_blank" rel="noopener" class="admin-btn-invoice" style="display:none;margin-left:auto;"><i class="fas fa-file-invoice"></i> Ver factura</a>
+        </h2>
         <div id="admin-msg-conversacion" class="admin-msg-conversacion">
             <div id="admin-msg-conversacion-list"></div>
+        </div>
+        <div class="admin-msg-ref-pago" style="margin:1rem 0;padding:12px;background:#f8f9fa;border-radius:8px;border:1px solid #e9ecef;">
+            <label style="display:block;font-weight:600;margin-bottom:6px;font-size:0.9rem;">Nº referencia del comprobante (para la factura)</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <input type="text" id="admin-payment-ref-input" placeholder="Pega aquí el nº de referencia del comprobante del cliente" maxlength="120" style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #ddd;border-radius:6px;">
+                <button type="button" id="admin-save-ref-btn" class="admin-btn-save-ref"><i class="fas fa-save"></i> Guardar</button>
+            </div>
+            <p style="font-size:0.8rem;color:#6c757d;margin-top:6px;">Al guardar, este número aparecerá en la factura del pedido.</p>
         </div>
         <p style="color:#666;font-size:0.9rem">El cliente verá tu mensaje en "Mis pedidos" &rarr; Mensajes.</p>
         <form id="admin-send-msg-form" class="admin-msg-form">
@@ -296,12 +324,41 @@
             msgModal.classList.add('is-open');
             fetch(baseUrl + '/pedido/' + id + '/detalle/?mark_client_read=1').then(function(r) { return r.json(); }).then(function(d) {
                 renderAdminConversacion(d.messages || []);
+                var refInput = document.getElementById('admin-payment-ref-input');
+                if (refInput) refInput.value = d.payment_reference || '';
+                var invoiceLink = document.getElementById('admin-msg-invoice-link');
+                if (invoiceLink) {
+                    if (d.status === 'delivered') { invoiceLink.href = adminBaseUrl + '/orders/pedido/' + id + '/factura/'; invoiceLink.style.display = 'inline-flex'; }
+                    else { invoiceLink.style.display = 'none'; }
+                }
                 var badge = btn.querySelector('.admin-msg-unread-badge');
                 if (badge) badge.remove();
                 if (typeof window.refreshOrdersUnreadBadges === 'function') window.refreshOrdersUnreadBadges();
             }).catch(function() { renderAdminConversacion([]); });
         });
     });
+    var saveRefBtn = document.getElementById('admin-save-ref-btn');
+    var refInput = document.getElementById('admin-payment-ref-input');
+    if (saveRefBtn && refInput) {
+        saveRefBtn.addEventListener('click', function() {
+            var orderId = document.getElementById('admin-msg-order-id-input').value;
+            if (!orderId) { alert('Abre primero la conversación de un pedido.'); return; }
+            var fd = new FormData();
+            fd.append('order_id', orderId);
+            fd.append('payment_reference', refInput.value.trim());
+            fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            saveRefBtn.disabled = true;
+            saveRefBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+            fetch('/orders/mis-pedidos/panel-admin/pedido/referencia-pago/', { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    saveRefBtn.disabled = false;
+                    saveRefBtn.innerHTML = '<i class="fas fa-save"></i> Guardar';
+                    if (data.ok) alert('Referencia guardada. Aparecerá en la factura.'); else alert(data.error || 'Error al guardar.');
+                })
+                .catch(function() { saveRefBtn.disabled = false; saveRefBtn.innerHTML = '<i class="fas fa-save"></i> Guardar'; alert('Error de conexión.'); });
+        });
+    }
     document.getElementById('admin-close-modal').onclick = function() { viewModal.classList.remove('is-open'); };
     document.getElementById('admin-close-msg').onclick = function() { msgModal.classList.remove('is-open'); };
     viewModal.addEventListener('click', function(e) { if (e.target === viewModal) viewModal.classList.remove('is-open'); });

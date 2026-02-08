@@ -59,8 +59,38 @@
 .info-section p, .info-section li { line-height: 1.75; color: #444; margin-bottom: 12px; }
 .info-section ul { margin: 12px 0 20px 24px; }
 .info-section ul li { margin-bottom: 6px; }
+/* Horario de atención: diseño empresarial */
+.info-hours-card {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-top: 24px;
+}
+.info-hours-block {
+    background: linear-gradient(145deg, #f8fafb 0%, #fff 100%);
+    border: 1px solid #e8eef2;
+    border-radius: 12px;
+    padding: 20px 24px;
+    box-shadow: 0 2px 8px rgba(10, 43, 50, 0.06);
+}
+.info-hours-block h4 {
+    font-size: 1rem;
+    color: #0A2B32;
+    margin: 0 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid rgba(10, 43, 50, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.info-hours-block h4 i { color: #284660; width: 20px; text-align: center; }
+.info-hours-block .hours { font-size: 1.1rem; font-weight: 600; color: #0A2B32; }
+.info-hours-block p.note { font-size: 0.9rem; color: #6c757d; margin: 16px 0 0 0; padding-top: 12px; border-top: 1px solid #eee; }
+.info-hours p.info-hours-note { margin-top: 20px; padding: 14px 18px; background: #f0f7fa; border-radius: 8px; border-left: 4px solid #0A2B32; font-size: 0.95rem; }
+.info-hours p.info-hours-note i { color: #0A2B32; margin-right: 8px; }
 .info-hours p { margin-bottom: 8px; }
 .info-hours ul { margin-top: 8px; }
+.info-hours .info-hours-intro { color: #555; margin-bottom: 20px; font-size: 1rem; }
 @media (max-width: 768px) {
     .info-page { padding: 20px 16px 40px; margin-top: 16px; }
     .info-hero { padding: 36px 20px 32px; }
@@ -90,16 +120,18 @@
   <article id="envios" class="info-section active">
     <h2>Horario de atención</h2>
     <div class="policy-content info-hours">
-      <p>Nuestro equipo está disponible para atender sus consultas en el siguiente horario:</p>
-      <p><strong>Lunes a viernes:</strong></p>
-      <ul>
-        <li>9:00 a. m. – 5:00 p. m.</li>
-      </ul>
-      <p><strong>Sábados:</strong></p>
-      <ul>
-        <li>10:00 a. m. – 4:00 p. m.</li>
-      </ul>
-      <p>Para envíos y pedidos puede escribirnos también por redes sociales o WhatsApp.</p>
+      <p class="info-hours-intro">Nuestro equipo está disponible para atender sus consultas en el siguiente horario:</p>
+      <div class="info-hours-card">
+        <div class="info-hours-block">
+          <h4><i class="fas fa-calendar-week"></i> Lunes a viernes</h4>
+          <p class="hours">9:00 a. m. – 5:00 p. m.</p>
+        </div>
+        <div class="info-hours-block">
+          <h4><i class="fas fa-calendar-day"></i> Sábados</h4>
+          <p class="hours">10:00 a. m. – 4:00 p. m.</p>
+        </div>
+      </div>
+      <p class="info-hours-note"><i class="fas fa-info-circle"></i> Para envíos y pedidos puede escribirnos también por redes sociales o WhatsApp.</p>
     </div>
   </article>
 
@@ -153,18 +185,25 @@
 (function() {
     var navButtons = document.querySelectorAll('.info-nav button');
     var sections = document.querySelectorAll('.info-section');
+    function showSection(sectionId) {
+        navButtons.forEach(function(b) { b.classList.remove('active'); });
+        sections.forEach(function(s) { s.classList.remove('active'); });
+        var btn = document.querySelector('.info-nav button[data-section="' + sectionId + '"]');
+        var el = document.getElementById(sectionId);
+        if (btn) btn.classList.add('active');
+        if (el) el.classList.add('active');
+    }
     navButtons.forEach(function(btn) {
         btn.addEventListener('click', function() {
-            navButtons.forEach(function(b) { b.classList.remove('active'); });
-            sections.forEach(function(s) { s.classList.remove('active'); });
-            this.classList.add('active');
             var id = this.getAttribute('data-section');
-            var el = document.getElementById(id);
-            if (el) {
-                el.classList.add('active');
-                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            if (id) showSection(id);
         });
+    });
+    var hash = window.location.hash.replace('#', '');
+    if (hash) showSection(hash);
+    window.addEventListener('hashchange', function() {
+        var h = window.location.hash.replace('#', '');
+        if (h) showSection(h);
     });
 })();
 </script>

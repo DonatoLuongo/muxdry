@@ -1,5 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.conf import settings
+
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -44,3 +46,18 @@ class Product(models.Model):
             discount = ((self.old_price - self.price) / self.old_price) * 100
             return round(discount, 0)
         return 0
+
+
+class ProductFavorite(models.Model):
+    """Favoritos (me encanta) por usuario: solo el cliente ve sus productos favoritos."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='product_favorites')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='favorited_by')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [['user', 'product']]
+        verbose_name = 'Producto favorito'
+        verbose_name_plural = 'Productos favoritos'
+
+    def __str__(self):
+        return f"{self.user.username} → {self.product.name}"

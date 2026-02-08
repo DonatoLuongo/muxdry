@@ -9,6 +9,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
+from django.templatetags.static import static
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from .models import Order, OrderItem, Cart, CartItem, OrderMessage
@@ -614,6 +615,7 @@ def _order_detail_data(order):
         'items': items,
         'messages': msgs,
         'user_email': order.user.email,
+        'payment_reference': order.payment_reference or '',
     }
 
 
@@ -703,6 +705,60 @@ def client_send_message_view(request, order_id):
     if msg.image:
         data['image_url'] = msg.image.url
     return JsonResponse(data)
+
+
+def _can_view_invoice(request, order):
+    """Solo pedidos entregados; cliente dueño del pedido o staff."""
+    if order.status != 'delivered':
+        return False
+    return order.user_id == request.user.id or request.user.is_staff
+
+
+@login_required
+def invoice_view(request, order_id):
+    """Vista de factura (solo pedidos entregados). Cliente o admin."""
+    order = get_object_or_404(Order, pk=order_id)
+    if not _can_view_invoice(request, order):
+        return redirect('orders:current_orders')
+    user = order.user
+    client_name = user.get_full_name() or user.username or order.shipping_name or 'Cliente'
+    client_email = order.shipping_email or user.email or ''
+    client_phone = getattr(user.profile, 'phone', None) if hasattr(user, 'profile') else None
+    if not client_phone:
+        client_phone = order.shipping_phone or ''
+    logo_path = static('assets/Logotipos/Logo2.svg')
+    logo_url = request.build_absolute_uri(logo_path) if logo_path else ''
+    back_url = request.META.get('HTTP_REFERER') or (request.build_absolute_uri('/orders/mis-pedidos/panel-admin/') if request.user.is_staff else request.build_absolute_uri('/orders/mis-pedidos/'))
+    context = {
+        'order': order,
+        'company_name': getattr(settings, 'COMPANY_NAME', 'MULTIVENTAS XIMAREN C.A.'),
+        'company_rif': getattr(settings, 'COMPANY_RIF', 'J-12345678-9'),
+        'company_phone': getattr(settings, 'COMPANY_PHONE', '(58) 412-991-4914'),
+        'company_email': getattr(settings, 'COMPANY_EMAIL', 'informacion@muxdry.com'),
+        'company_address': getattr(settings, 'COMPANY_ADDRESS', 'Caracas, Av. Andrés Bello, Torre Centro Andrés Bello, Piso 15'),
+        'client_name': client_name,
+        'client_email': client_email,
+        'client_phone': client_phone,
+        'logo_url': logo_url,
+        'back_url': back_url,
+    }
+    return render(request, 'orders/invoice.html', context)
+
+
+@login_required
+@user_passes_test(_staff_required, login_url='/accounts/login/')
+def admin_set_payment_reference_view(request):
+    """Admin: guarda el número de referencia del comprobante en el pedido. POST order_id, payment_reference."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    order_id = request.POST.get('order_id')
+    ref = (request.POST.get('payment_reference') or '').strip()
+    if not order_id:
+        return JsonResponse({'error': 'order_id requerido'}, status=400)
+    order = get_object_or_404(Order, pk=order_id)
+    order.payment_reference = ref[:120]
+    order.save(update_fields=['payment_reference'])
+    return JsonResponse({'ok': True, 'payment_reference': order.payment_reference})
 
 
 @login_required

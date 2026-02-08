@@ -30,6 +30,9 @@
                 <h1 class="product-title">{{ product.name }}</h1>
                 <div class="product-meta">
                     <span class="product-sku">{{ product.sku }}</span>
+                    {% if product.stock is not None %}
+                    <span class="product-stock" title="Unidades disponibles">Disponible: <strong>{{ product.stock }}</strong></span>
+                    {% endif %}
                     <div class="product-rating">
                         <div class="stars" title="{{ average_rating }} de 5 estrellas ({{ review_count }} reseñas)">
                             {% for i in "12345" %}

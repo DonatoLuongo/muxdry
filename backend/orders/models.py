@@ -116,6 +116,7 @@ class Order(models.Model):
     # Pago
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='transfer')
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
+    payment_reference = models.CharField(max_length=120, blank=True, verbose_name='Nº de referencia del comprobante')
 
     # Estado
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
