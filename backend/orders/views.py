@@ -728,6 +728,8 @@ def invoice_view(request, order_id):
         client_phone = order.shipping_phone or ''
     logo_path = static('assets/Logotipos/Logo2.svg')
     logo_url = request.build_absolute_uri(logo_path) if logo_path else ''
+    seal_path = static('assets/Logotipos/Logo_MUX_seal.png')
+    seal_url = request.build_absolute_uri(seal_path) if seal_path else logo_url
     back_url = request.META.get('HTTP_REFERER') or (request.build_absolute_uri('/orders/mis-pedidos/panel-admin/') if request.user.is_staff else request.build_absolute_uri('/orders/mis-pedidos/'))
     context = {
         'order': order,
@@ -740,6 +742,7 @@ def invoice_view(request, order_id):
         'client_email': client_email,
         'client_phone': client_phone,
         'logo_url': logo_url,
+        'seal_url': seal_url,
         'back_url': back_url,
     }
     return render(request, 'orders/invoice.html', context)
